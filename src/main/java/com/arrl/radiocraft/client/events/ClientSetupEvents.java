@@ -2,24 +2,28 @@ package com.arrl.radiocraft.client.events;
 
 
 import com.arrl.radiocraft.Radiocraft;
+import com.arrl.radiocraft.client.commands.TapeTestCommands;
 import com.arrl.radiocraft.client.entity.AntennaWireEntityRenderer;
 import com.arrl.radiocraft.client.screens.*;
 import com.arrl.radiocraft.client.screens.radios.*;
+import com.arrl.radiocraft.common.commands.CallsignCommands;
 import com.arrl.radiocraft.common.init.RadiocraftEntityTypes;
 import com.arrl.radiocraft.common.init.RadiocraftBlockEntities;
 import com.arrl.radiocraft.common.blockentities.DeskChargerBlockEntity;
 import com.arrl.radiocraft.client.render.DeskChargerBlockRenderer;
 import com.arrl.radiocraft.client.render.RadioDisplayRenderer;
 import com.arrl.radiocraft.client.render.RadioDisplays;
+import net.minecraft.commands.Commands;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import com.arrl.radiocraft.common.init.RadiocraftMenuTypes;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
+import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.client.event.RegisterMenuScreensEvent;
 
-@EventBusSubscriber(modid= Radiocraft.MOD_ID, value= Dist.CLIENT)
+@EventBusSubscriber(modid = Radiocraft.MOD_ID, value = Dist.CLIENT)
 public class ClientSetupEvents {
 
 	@SubscribeEvent
@@ -163,9 +167,14 @@ public class ClientSetupEvents {
 	}
 
 	/** The wire model works its look out from the neighbours, see {@link com.arrl.radiocraft.client.model.WireModel}. */
-	@net.neoforged.bus.api.SubscribeEvent
+	@SubscribeEvent
 	public static void registerGeometryLoaders(net.neoforged.neoforge.client.event.ModelEvent.RegisterGeometryLoaders event) {
 		event.register(com.arrl.radiocraft.client.model.WireModel.LOADER_ID, com.arrl.radiocraft.client.model.WireModel.Loader.INSTANCE);
 		event.register(com.arrl.radiocraft.client.model.TowerBeamModel.LOADER_ID, com.arrl.radiocraft.client.model.TowerBeamModel.Loader.INSTANCE);
+	}
+
+	@SubscribeEvent
+	public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
+		event.getDispatcher().register(TapeTestCommands.BUILDER);
 	}
 }

@@ -373,7 +373,7 @@ public class CallsignCommands {
         if (player.serverLevel().getServer().isSingleplayer()) {
             return true;
         }
-        // https://minecraft.fandom.com/wiki/Permission_level
+        // https://minecraft.wiki/w/Permission_level
         return player.hasPermissions(3);
     }
 }
