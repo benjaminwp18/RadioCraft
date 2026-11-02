@@ -37,6 +37,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * A phone PABX: every telephone needs one (maintainer, 2026-10-30). The phones it serves (touching it, or on its data
@@ -46,9 +47,14 @@ import java.util.Set;
  * phone network of equals (2026-10-31). A number dialed is an extension on the caller's own PABX if it has one;
  * otherwise, if it starts with the {@linkplain #getMaster() master number} of a powered PABX on the network, the rest
  * is an extension there: from 602's phones, "603100" rings extension 100 on PABX 603. Master numbers are all
- * {@link #masterDigits()} long, or empty (only the PABX's own phones can call it), and no two on a network match. Its
- * {@linkplain #getName() name} shows on a phone keying its master number. It needs power ({@link PabxNetworkObject});
- * with none, its phones have no line.
+ * {@link #masterDigits()} long, or empty (only the PABX's own phones can call it). Its {@linkplain #getName() name}
+ * shows on a phone keying its master number. It needs power ({@link PabxNetworkObject}); with none, its phones have no
+ * line.
+ * <p>
+ * PABXes on one network with the same master number act as one PABX (2026-11-02, {@link #linked()}): their phones
+ * dial each other by bare extension, so an extension may only be on one of them. A number two of them use is dead until
+ * one changes, and shows "EXT IN USE" ({@link #getClashes()}). The {@linkplain #getAllCall() All-Call extension} rings
+ * every phone on this PABX, and on any linked PABX with the same All-Call extension; the first to answer takes the call.
  */
 public class PabxBlockEntity extends BlockEntity implements INetworkObjectProvider, MenuProvider {
 
@@ -61,6 +67,10 @@ public class PabxBlockEntity extends BlockEntity implements INetworkObjectProvid
 	private String master = "";
 	private int firstExtension = FIRST_EXTENSION;
 	private String name = "";
+	/** The extension that rings all its phones; -1 for none. */
+	private int allCall = -1;
+	/** The numbers used twice among the PABXes linked to it, kept up by its tick (synced, for the screen and its phones). */
+	private Set<Integer> clashes = Set.of();
 	/** The phones it has numbered, so a number set by hand later is left alone. */
 	private final Set<BlockPos> numbered = new HashSet<>();
 	private boolean powered = false;
@@ -111,6 +121,16 @@ public class PabxBlockEntity extends BlockEntity implements INetworkObjectProvid
 		return firstExtension;
 	}
 
+	/** The extension that rings all its phones, as dialed; empty for none. */
+	public String getAllCall() {
+		return allCall < 0 ? "" : Integer.toString(allCall);
+	}
+
+	/** The numbers two of its linked phones (or a phone and an All-Call extension) have, so neither can be called. */
+	public Set<Integer> getClashes() {
+		return clashes;
+	}
+
 	/** Its name, shown on a phone keying its master number; empty for none. */
 	public String getName() {
 		return name;
@@ -131,8 +151,8 @@ public class PabxBlockEntity extends BlockEntity implements INetworkObjectProvid
 	}
 
 	/**
-	 * Sets the master number: empty, or exactly {@link #masterDigits()} digits that no other PABX on its network has.
-	 * Returns null if it was set, else the translation key saying why not.
+	 * Sets the master number: empty, or exactly {@link #masterDigits()} digits. PABXes on one network with the same one
+	 * are {@linkplain #linked() linked}. Returns null if it was set, else the translation key saying why not.
 	 */
 	@Nullable
 	public String setMaster(String number) {
@@ -147,13 +167,7 @@ public class PabxBlockEntity extends BlockEntity implements INetworkObjectProvid
 	/** Why {@code number} cannot be this PABX's master number, as a translation key, or null if it can. */
 	@Nullable
 	private String masterProblem(String number) {
-		if(!PabxNumbers.validMaster(number, masterDigits()))
-			return "screen.radiocraft.pabx.master_length";
-		if(!number.isEmpty())
-			for(PabxBlockEntity other : network().keySet())
-				if(other != this && other.master.equals(number))
-					return "screen.radiocraft.pabx.master_taken";
-		return null;
+		return PabxNumbers.validMaster(number, masterDigits()) ? null : "screen.radiocraft.pabx.master_length";
 	}
 
 	/** Sets the first extension, numbering every phone again from it if it changed. */
@@ -175,19 +189,31 @@ public class PabxBlockEntity extends BlockEntity implements INetworkObjectProvid
 	}
 
 	/**
-	 * The screen's Save: all three settings, or none if the master number or first extension will not do. The result
-	 * shows on the screen ({@link #getStatusKey()}). Returns true if saved.
+	 * The screen's Save: every setting, or none if the master number or an extension will not do. The result shows on
+	 * the screen ({@link #getStatusKey()}). An All-Call extension a phone has already is refused, here or on a PABX the
+	 * new master number links to; this PABX's own phones do not count if a new first extension renumbers them. Returns
+	 * true if saved.
 	 */
-	public boolean save(String number, String first, String newName) {
+	public boolean save(String number, String first, String all, String newName) {
 		String why = masterProblem(number);
-		int extension = PabxNumbers.digits(first) && first.length() <= PabxNumbers.MAX_EXTENSION_DIGITS ? Integer.parseInt(first) : -1;
-		if(why == null && (extension < 0 || extension > MAX_EXTENSION))
+		int extension = PabxNumbers.parseExtension(first);
+		int newAllCall = all.isEmpty() ? -1 : PabxNumbers.parseExtension(all);
+		if(why == null && extension < 0)
 			why = "screen.radiocraft.pabx.bad_extension";
+		if(why == null && newAllCall < 0 && !all.isEmpty())
+			why = "screen.radiocraft.pabx.bad_all_call";
+		if(why == null && newAllCall >= 0)
+			for(PabxBlockEntity pabx : linked(number))
+				if(pabx != this || extension == firstExtension)
+					for(TelephoneBlockEntity phone : pabx.phones())
+						if(phone.isNumbered() && phone.getExtension() == newAllCall)
+							why = "screen.radiocraft.pabx.all_call_taken";
 		if(why != null) {
-			status(why, why.endsWith("master_length") ? Integer.toString(masterDigits()) : number);
+			status(why, why.endsWith("master_length") ? Integer.toString(masterDigits()) : all);
 			return false;
 		}
 		master = number;
+		allCall = newAllCall;
 		setFirstExtension(extension);
 		setName(newName);
 		status("screen.radiocraft.pabx.saved", "");
@@ -245,43 +271,98 @@ public class PabxBlockEntity extends BlockEntity implements INetworkObjectProvid
 		return out;
 	}
 
-	/** The phone with extension {@code digits} here, or null (also if it has no power). */
-	@Nullable
-	private TelephoneBlockEntity extension(String digits) {
-		if(!powered)
-			return null;
-		for(TelephoneBlockEntity phone : phones())
-			if(PabxNumbers.isExtension(digits, phone.getExtension()))
-				return phone;
-		return null;
+	/** The PABXes that act as one with this one: itself first, then those on its network with its master number. */
+	public List<PabxBlockEntity> linked() {
+		return linked(master);
 	}
 
-	/** True if {@code digits} is one of its phones' extensions. */
-	public boolean hasExtension(String digits) {
-		for(TelephoneBlockEntity phone : phones())
-			if(PabxNumbers.isExtension(digits, phone.getExtension()))
-				return true;
-		return false;
+	/** {@link #linked()} if its master number were {@code number}. An empty master number links to nothing. */
+	private List<PabxBlockEntity> linked(String number) {
+		List<PabxBlockEntity> out = new ArrayList<>(List.of(this));
+		if(!number.isEmpty())
+			for(PabxBlockEntity other : network().keySet())
+				if(other != this && other.master.equals(number))
+					out.add(other);
+		return out;
+	}
+
+	/** Every number taken among the PABXes linked to it, which a new phone or All-Call extension cannot have. */
+	public Set<Integer> numbersInUse() {
+		Set<Integer> out = new HashSet<>();
+		for(PabxBlockEntity pabx : linked()) {
+			if(pabx.allCall >= 0)
+				out.add(pabx.allCall);
+			for(TelephoneBlockEntity phone : pabx.phones()) // Phones waiting to be numbered again keep no number.
+				if(phone.isNumbered() && (!pabx.powered || pabx.numbered.contains(phone.getBlockPos())))
+					out.add(phone.getExtension());
+		}
+		return out;
+	}
+
+	/** What a dialed number reaches: the phones to ring, or none; {@code inUse} if two things have that number. */
+	public record Route(List<TelephoneBlockEntity> phones, boolean inUse, boolean allCall) {
+		private static final Route NONE = new Route(List.of(), false, false);
+		private static final Route IN_USE = new Route(List.of(), true, false);
 	}
 
 	/**
-	 * The phone {@code digits} rings when dialed from a phone on this PABX: one of its own extensions, else an
-	 * extension on the powered PABX on its network whose master number {@code digits} starts with. Null if none.
+	 * What {@code digits} reaches when dialed from a phone on this PABX: a number on it or a PABX linked to it, else a
+	 * number on the PABXes on its network whose master number {@code digits} starts with.
 	 */
-	@Nullable
-	public TelephoneBlockEntity resolve(String digits) {
+	public Route route(String digits) {
 		if(!powered)
-			return null;
-		TelephoneBlockEntity local = extension(digits);
-		if(local != null)
-			return local;
+			return Route.NONE;
+		Route here = routeOn(linked(), digits);
+		if(here != Route.NONE)
+			return here;
 		for(PabxBlockEntity pabx : network().keySet()) {
 			String rest = PabxNumbers.extensionAfter(digits, pabx.master);
-			TelephoneBlockEntity phone = rest == null ? null : pabx.extension(rest);
-			if(phone != null)
-				return phone;
+			if(rest != null) {
+				Route there = routeOn(pabx.linked(), rest);
+				if(there != Route.NONE)
+					return there;
+			}
 		}
-		return null;
+		return Route.NONE;
+	}
+
+	/** What {@code digits} reaches on these linked PABXes: those with no power do not answer. */
+	private static Route routeOn(List<PabxBlockEntity> linked, String digits) {
+		List<TelephoneBlockEntity> found = new ArrayList<>();
+		List<TelephoneBlockEntity> allCalled = new ArrayList<>();
+		boolean isAllCall = false;
+		for(PabxBlockEntity pabx : linked) {
+			if(!pabx.powered)
+				continue;
+			boolean all = pabx.allCall >= 0 && PabxNumbers.isExtension(digits, pabx.allCall);
+			isAllCall |= all;
+			for(TelephoneBlockEntity phone : pabx.phones()) {
+				if(phone.isNumbered() && PabxNumbers.isExtension(digits, phone.getExtension()))
+					found.add(phone);
+				if(all)
+					allCalled.add(phone);
+			}
+		}
+		if(found.size() > 1 || (!found.isEmpty() && isAllCall))
+			return Route.IN_USE;
+		if(isAllCall)
+			return new Route(allCalled, false, true);
+		return found.isEmpty() ? Route.NONE : new Route(found, false, false);
+	}
+
+	/** The numbers used twice among the powered PABXes linked to it. */
+	private Set<Integer> findClashes() {
+		Set<Integer> seen = new HashSet<>(), out = new TreeSet<>();
+		List<PabxBlockEntity> linked = linked();
+		for(PabxBlockEntity pabx : linked)
+			if(pabx.powered)
+				for(TelephoneBlockEntity phone : pabx.phones())
+					if(phone.isNumbered() && !seen.add(phone.getExtension()))
+						out.add(phone.getExtension());
+		for(PabxBlockEntity pabx : linked)
+			if(pabx.powered && seen.contains(pabx.allCall))
+				out.add(pabx.allCall);
+		return out;
 	}
 
 	/** The master numbers and names of the powered PABXes on its network (this one included), nearest first. */
@@ -318,24 +399,31 @@ public class PabxBlockEntity extends BlockEntity implements INetworkObjectProvid
 		}
 		if(state.getValue(PabxBlock.LIT) != powered)
 			level.setBlock(worldPosition, state.setValue(PabxBlock.LIT, powered), Block.UPDATE_CLIENTS);
-		if(powered && level.getGameTime() % 20 == 0)
-			number();
+		if(level.getGameTime() % 20 == 0) {
+			if(powered)
+				number();
+			Set<Integer> found = powered ? findClashes() : Set.of();
+			if(!found.equals(clashes)) {
+				clashes = found;
+				sync();
+			}
+		}
 	}
 
-	/** Gives each phone it has not numbered yet the lowest free extension from its first extension. */
+	/** Gives each phone it has not numbered yet the lowest number free here and on linked PABXes, from its first extension. */
 	private void number() {
 		List<TelephoneBlockEntity> phones = phones();
+		Set<Integer> taken = null;
 		for(TelephoneBlockEntity phone : phones) {
 			if(numbered.contains(phone.getBlockPos()))
 				continue;
-			Set<Integer> taken = new HashSet<>();
-			for(TelephoneBlockEntity other : phones)
-				if(other != phone && numbered.contains(other.getBlockPos()))
-					taken.add(other.getExtension());
+			if(taken == null)
+				taken = numbersInUse();
 			int extension = firstExtension;
 			while(taken.contains(extension) && extension < MAX_EXTENSION)
 				extension++;
 			phone.assignExtension(extension);
+			taken.add(extension);
 			numbered.add(phone.getBlockPos().immutable());
 			setChanged();
 		}
@@ -361,6 +449,7 @@ public class PabxBlockEntity extends BlockEntity implements INetworkObjectProvid
 		tag.putString("master", master);
 		tag.putInt("firstExtension", firstExtension);
 		tag.putString("name", name);
+		tag.putInt("allCall", allCall);
 		ListTag list = new ListTag();
 		for(BlockPos pos : numbered)
 			list.add(LongTag.valueOf(pos.asLong()));
@@ -373,6 +462,7 @@ public class PabxBlockEntity extends BlockEntity implements INetworkObjectProvid
 		master = tag.getString("master"); // A "behind" tag from 1.10.0 is ignored: every PABX is a peer now.
 		firstExtension = tag.contains("firstExtension") ? tag.getInt("firstExtension") : FIRST_EXTENSION;
 		name = PabxNumbers.cleanName(tag.getString("name"));
+		allCall = tag.contains("allCall") ? tag.getInt("allCall") : -1;
 		numbered.clear();
 		for(Tag entry : tag.getList("numbered", Tag.TAG_LONG))
 			numbered.add(BlockPos.of(((LongTag)entry).getAsLong()));
@@ -381,6 +471,10 @@ public class PabxBlockEntity extends BlockEntity implements INetworkObjectProvid
 			clientMasterDigits = tag.getInt("masterDigits");
 			statusKey = tag.getString("statusKey");
 			statusArg = tag.getString("statusArg");
+			Set<Integer> read = new TreeSet<>();
+			for(int number : tag.getIntArray("clashes"))
+				read.add(number);
+			clashes = read;
 		}
 	}
 
@@ -391,6 +485,7 @@ public class PabxBlockEntity extends BlockEntity implements INetworkObjectProvid
 		tag.putInt("masterDigits", masterDigits());
 		tag.putString("statusKey", statusKey);
 		tag.putString("statusArg", statusArg);
+		tag.putIntArray("clashes", clashes.stream().mapToInt(Integer::intValue).toArray());
 		return tag;
 	}
 

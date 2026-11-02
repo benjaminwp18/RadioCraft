@@ -1,4 +1,4 @@
-"""Writes the phone PABX's screen texture: a plain vanilla-style grey panel, 176 x 166 on a 256 x 256 sheet
+"""Writes the phone PABX's screen texture: a plain vanilla-style grey panel, 176 x 192 on a 256 x 256 sheet
 (PabxScreen draws the text boxes, the Save button and the text on it).
 
     python tools/pabx_gui.py
@@ -8,7 +8,7 @@ from pathlib import Path
 from PIL import Image
 
 GUI = Path(__file__).resolve().parent.parent / "src/main/resources/assets/radiocraft/textures/gui"
-WIDTH, HEIGHT = 176, 166
+WIDTH, HEIGHT = 176, 192
 
 BLACK = (0, 0, 0, 255)
 LIGHT = (255, 255, 255, 255)

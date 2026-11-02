@@ -11,12 +11,17 @@
     {
       "type": "patchouli:text",
       "title": "Settings",
-      "text": "$(li)$(thing)Master number$(): dialed before an extension to reach this PABX. Three digits, or none (then only its own phones can call it); no two PABXes that reach each other share one.$(li)$(thing)First extension$(): its phones are numbered from here, 100 by default. Changing it numbers them all again.$(li)$(thing)PABX name$(): up to 10 letters, shown on a phone keying its master number."
+      "text": "$(li)$(thing)Master number$(): dialed before an extension to reach this PABX. Three digits, or none (then only its own phones can call it).$(li)$(thing)First extension$(): its phones are numbered from here, 100 by default. Changing it numbers them all again.$(li)$(thing)All-Call extension$(): rings all its phones; the first to answer takes the call.$(li)$(thing)PABX name$(): up to 10 letters, shown on a phone keying its master number."
     },
     {
       "type": "patchouli:text",
       "title": "Calling other PABXes",
       "text": "PABXes on one data wire, or across a $(l:radiocraft:microwave/microwave_radio)microwave link$(/l), reach each other. Dial the other PABX's master number, then the extension: master 603, extension 100 is $(thing)603100$(). An extension on your own PABX always wins.$(br2)A microwave radio alone is not an exchange: phones on it need a PABX too."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Linked PABXes",
+      "text": "PABXes that reach each other and share a master number act as one: their phones dial each other by extension alone. A number can only be used once across them. If two phones have it, neither can be called and $(thing)EXT IN USE$() flashes until one changes.$(br2)An All-Call extension also rings a linked PABX's phones if that PABX has the same All-Call extension."
     },
     {
       "type": "patchouli:crafting",

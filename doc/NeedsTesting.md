@@ -8,6 +8,18 @@ writes back here: `- [ ]` not tested, `- [x]` passed, `- [!]` needs work, with `
 `![caption](testing_shots/...)` screenshots indented under the item. Whoever picks up a `[!]` item fixes it (or moves
 it to [todo.md](../todo.md)), then sets it back to `[ ]` for the next playtest.
 
+## Linked PABXes, All-Call (added 2026-11-02)
+
+GameTests cover the calling logic and unit tests the levels; these need a client.
+
+- [ ] PABX screen: a taller panel with a fourth box, All-Call extension (or none), between First extension and PABX
+  name; nothing overlaps, and the status line and the flashing red "EXT IN USE: 100" at the bottom both fit.
+- [ ] Two PABXes with one master number, wired or over microwave: each phone dials the other's bare extension. Give
+  them clashing extensions before linking: "EXT IN USE" flashes in the top right of both phones' LCDs and on the PABX
+  screens, and dialing that number flashes it on the caller's bottom line. Changing one phone clears it within 2 s.
+- [ ] All-Call: every phone rings; the first to answer talks and the others show ANSWERED ELSEWHERE.
+
+
 ## PABX rework (added 2026-10-31)
 
 PABXes have no "behind" setting any more: all PABXes on one data wire or across microwave links are peers, reached
@@ -16,7 +28,7 @@ by master number + extension (a local extension wins). GameTests pass; these nee
 - [ ] Right click a PABX: a plain grey panel at normal GUI size, "Phone PABX" and Powered / No power on top, three
   text boxes (Master number (3 digits, or none), First extension, PABX name (up to 10)) and Save. Typing E in a box
   does not close it; ENTER saves; the name comes out upper case. The line under Save says Saved, or why not (a
-  2-digit master number, or one another PABX on the network has).
+  2-digit master number).
 - [ ] With JEI installed, its item list sits beside the PABX screen, and no longer covers the telephone, H19, fax,
   microwave radio or other scaled-up station screens (it moves aside or hides the items that would land on them).
 - [ ] Two PABXes on one data wire (or across a microwave link), 602 and 603, 603 named OFFICE: on 602's phone, keying

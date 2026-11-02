@@ -170,7 +170,7 @@ public class TelephoneScreen extends StationPanelScreen<TelephoneMenu> {
 		TelephoneBlockEntity phone = phone();
 		int x = leftPos + LCD[0] + 4, y = topPos + LCD[1] + 4;
 		String state = switch(phone.getState()) {
-			case IDLE -> settingExtension ? "NEW EXT" : "READY";
+			case IDLE -> settingExtension ? "NEW EXT" : !phone.isExtensionInUse() ? "READY" : (now / 400L) % 2L == 0L ? TelephoneBlockEntity.EXT_IN_USE : "";
 			case CALLING -> "RINGING " + phone.getPartnerNumber();
 			case RINGING -> (now / 400L) % 2L == 0L ? "CALL FROM " + phone.getPartnerNumber() : "";
 			case IN_CALL -> String.format("TALK %s  %d:%02d", phone.getPartnerNumber(), phone.getStateTicks() / 1200, phone.getStateTicks() / 20 % 60);
@@ -185,6 +185,7 @@ public class TelephoneScreen extends StationPanelScreen<TelephoneMenu> {
 			return;
 		}
 		String line = !number.isEmpty() ? number + cursor
+				: phone.getStatus().equals(TelephoneBlockEntity.EXT_IN_USE) && (now / 400L) % 2L != 0L ? ""
 				: phone.getState() == TelephoneBlockEntity.State.RINGING ? "CALL TO ANSWER"
 				: phone.getStatus().isEmpty() ? (settingExtension ? "KEY NEW NUMBER" : numberLine(phone)) : phone.getStatus();
 		text(guiGraphics, line, x, y + 12, number.isEmpty() ? 0.75F : 1.0F, LCD_INK, false);

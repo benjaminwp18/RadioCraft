@@ -33,6 +33,11 @@ public final class PabxNumbers {
 		return master.isEmpty() || (master.length() == length && digits(master));
 	}
 
+	/** {@code text} as an extension number, or -1 if it is not one (not digits, or too long). */
+	public static int parseExtension(String text) {
+		return digits(text) && text.length() <= MAX_EXTENSION_DIGITS ? Integer.parseInt(text) : -1;
+	}
+
 	/** True if {@code c} may be in a PABX name: a letter, a digit, a space or a dash. */
 	public static boolean nameChar(char c) {
 		return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == ' ' || c == '-';

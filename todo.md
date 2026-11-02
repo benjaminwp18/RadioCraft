@@ -546,10 +546,12 @@ Models and textures we want drawn by someone else are listed in [doc/ModelDesign
   - [x] Maintainer's models in (2026-10-27): `telephone_wallmount.json` (drawn lying down, stood up by blockstate x 90)
     and `phone_item.json` (renamed from `phone_Item.json`); the script works out the handset item's display slots
   - [ ] Keep linked radios' chunks loaded? (today a far end in an unloaded chunk drops the link)
+  - [x] Linked PABXes and All-Call (maintainer, 2026-11-02): PABXes on one network with the same master number dial
+    each other's bare extensions; a number used twice is dead and flashes EXT IN USE. An All-Call extension rings all
+    a PABX's phones, and those of linked PABXes with the same one; the first to answer takes it. `PabxGameTests`.
   - [x] Phone PABX numbering like real phone systems (maintainer, 2026-10-31): no "behind" setting; PABXes on one data
     wire or across microwave links are peers. A local extension wins, else a number starting with a powered PABX's
-    master number rings that extension there. `pabx_master_digits` (3) sets the master length; duplicates on a network
-    are refused. PABX names (10 characters) show on a phone keying the master number ("PABX 603: OFFICE"). Plain
+    master number rings that extension there. `pabx_master_digits` (3) sets the master length. PABX names (10 characters) show on a phone keying the master number ("PABX 603: OFFICE"). Plain
     settings screen (`PabxScreen`), and JEI keeps off every scaled station panel. `PabxGameTests`, `PabxNumbersTest`.
 - [x] HF manpack (2026-10-26): `HFManpackItem` worn on the chest or Curios back slot, `ManpackRadio` (QRP whip, SSB and
   CW on 10m/20m, re-placed every tick like the VHF handheld), olive panel `ManpackScreen`, handset `ManpackMicItem`,

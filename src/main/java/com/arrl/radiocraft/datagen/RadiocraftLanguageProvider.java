@@ -159,20 +159,24 @@ public class RadiocraftLanguageProvider extends LanguageProvider {
 			provider.add("key.radiocraft.open_manpack", "Open Worn Manpack");
 			provider.addBlock(RadiocraftBlocks.TELEPHONE, "Telephone");
 			provider.addBlock(RadiocraftBlocks.PABX, "Phone PABX");
-			provider.add("tooltip.radiocraft.pabx", "Every telephone needs one: phones touching it or on its data wire call each other by extension. Needs power. PABXes on one data wire or across a microwave link call each other by master number, then extension. Right click to set its master number, first extension and name.");
+			provider.add("tooltip.radiocraft.pabx", "Every telephone needs one: phones touching it or on its data wire call each other by extension. Needs power. PABXes on one data wire or across a microwave link call each other by master number, then extension; with the same master number they act as one PABX. Right click to set its master number, first extension, All-Call extension and name.");
 			provider.add("container.radiocraft.pabx", "Phone PABX");
 			provider.add("screen.radiocraft.pabx.master", "Master number");
 			provider.add("screen.radiocraft.pabx.first", "First extension");
+			provider.add("screen.radiocraft.pabx.all_call", "All-Call extension");
 			provider.add("screen.radiocraft.pabx.name", "PABX name");
 			provider.add("screen.radiocraft.pabx.master_label", "Master number (%s digits, or none)");
 			provider.add("screen.radiocraft.pabx.first_label", "First extension");
+			provider.add("screen.radiocraft.pabx.all_call_label", "All-Call extension (or none)");
 			provider.add("screen.radiocraft.pabx.name_label", "PABX name (up to %s)");
 			provider.add("screen.radiocraft.pabx.save", "Save");
 			provider.add("screen.radiocraft.pabx.powered", "Powered");
 			provider.add("screen.radiocraft.pabx.no_power", "No power");
 			provider.add("screen.radiocraft.pabx.saved", "Saved");
 			provider.add("screen.radiocraft.pabx.master_length", "A master number has exactly %s digits, or none");
-			provider.add("screen.radiocraft.pabx.master_taken", "Another PABX on this network already has master number %s");
+			provider.add("screen.radiocraft.pabx.bad_all_call", "The All-Call extension is a number from 0 to 99999, or none");
+			provider.add("screen.radiocraft.pabx.all_call_taken", "A phone already has extension %s");
+			provider.add("screen.radiocraft.pabx.ext_in_use", "EXT IN USE: %s");
 			provider.add("screen.radiocraft.pabx.bad_extension", "The first extension is a number from 0 to 99999");
 			provider.addBlock(RadiocraftBlocks.WEATHER_STATION, "Weather Station");
 			// The alternator only exists with Create (compat/create), so it is named by key.
@@ -185,7 +189,7 @@ public class RadiocraftLanguageProvider extends LanguageProvider {
 			provider.add("tooltip.radiocraft.telephone", "Put it on a powered Phone PABX (touching, or on its data wire) and dial another phone's extension, or another PABX's master number and an extension. Sneak and right click to pick up the handset; place it on the side of a block to hang it on the wall.");
 			provider.add("tooltip.radiocraft.weather_station", "Put it up high in the open. Any H19 APRS terminal within 64 blocks sends its weather in its beacons.");
 			provider.add("screen.radiocraft.microwave.identity_taken", "Another microwave radio already has that callsign and ID");
-			provider.add("screen.radiocraft.telephone.extension_taken", "No PABX, or another phone on it already has that extension");
+			provider.add("screen.radiocraft.telephone.extension_taken", "No PABX, or that extension is already in use");
 			provider.add("tooltip.radiocraft.handheld_direction_finder", "Right click to set the frequency. Held, it beeps faster the more you face a station transmitting there.");
 			provider.add("container.radiocraft.direction_finder", "Direction Finder");
 			provider.add("container.radiocraft.map_direction_finder", "Map Enabled Direction Finder");

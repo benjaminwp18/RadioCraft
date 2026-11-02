@@ -293,7 +293,7 @@ public class MicrowaveGameTests {
 					String number = "203" + callee.getExtension();
 					// Hop limit 1: C is two links away. Put the limit back before any assert can leave it set.
 					RadiocraftServerConfig.MICROWAVE_MAX_HOPS.set(1);
-					boolean reachedAtOne = pabxA.resolve(number) == callee;
+					boolean reachedAtOne = pabxA.route(number).phones().contains(callee);
 					RadiocraftServerConfig.MICROWAVE_MAX_HOPS.set(8);
 					helper.assertFalse(reachedAtOne, "A phone two links away was reachable with a hop limit of one");
 					caller.dial(number);
@@ -396,8 +396,7 @@ public class MicrowaveGameTests {
 					TelephoneBlockEntity caller = GameTestUtil.blockEntity(helper, A.south(2), TelephoneBlockEntity.class);
 					TelephoneBlockEntity callee = GameTestUtil.blockEntity(helper, B.south(2), TelephoneBlockEntity.class);
 					helper.assertTrue(GameTestUtil.blockEntity(helper, B.south(), PabxBlockEntity.class).setMaster("602") == null, "602 refused");
-					helper.assertTrue("screen.radiocraft.pabx.master_taken".equals(GameTestUtil.blockEntity(helper, A.south(), PabxBlockEntity.class).setMaster("602")),
-							"A PABX across the link took a master number already in use there");
+					helper.assertTrue(GameTestUtil.blockEntity(helper, A.south(), PabxBlockEntity.class).setMaster("601") == null, "601 refused");
 					caller.dial(Integer.toString(callee.getExtension()));
 					helper.assertTrue(callee.getState() == TelephoneBlockEntity.State.IDLE, "A bare extension rang a phone on another PABX");
 					caller.dial("602" + callee.getExtension());
@@ -406,6 +405,15 @@ public class MicrowaveGameTests {
 					helper.assertTrue(caller.getState() == TelephoneBlockEntity.State.IN_CALL && callee.getState() == TelephoneBlockEntity.State.IN_CALL, "The call is not up");
 					callee.hangUp();
 					helper.assertTrue(caller.getState() == TelephoneBlockEntity.State.IDLE, "Hanging up did not end the call at the other end");
+
+					// The same master number links them across the microwave too: both are on extension 100, which clashes until one moves.
+					helper.assertTrue(GameTestUtil.blockEntity(helper, A.south(), PabxBlockEntity.class).setMaster("602") == null, "602 refused on A");
+					caller.dial(Integer.toString(callee.getExtension()));
+					helper.assertTrue(caller.getStatus().equals(TelephoneBlockEntity.EXT_IN_USE), "A clash across the link shows " + caller.getStatus());
+					helper.assertTrue(callee.setExtension(777), "777 refused");
+					caller.dial("777");
+					helper.assertTrue(callee.getState() == TelephoneBlockEntity.State.RINGING, "A bare extension across the link did not ring: " + caller.getStatus());
+					caller.hangUp();
 				})
 				.thenSucceed();
 	}

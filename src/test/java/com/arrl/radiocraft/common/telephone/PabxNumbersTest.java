@@ -40,6 +40,15 @@ class PabxNumbersTest {
     }
 
     @Test
+    void extensionsParseUpToFiveDigits() {
+        assertEquals(100, PabxNumbers.parseExtension("100"));
+        assertEquals(99999, PabxNumbers.parseExtension("99999"));
+        assertEquals(-1, PabxNumbers.parseExtension("100000"));
+        assertEquals(-1, PabxNumbers.parseExtension(""));
+        assertEquals(-1, PabxNumbers.parseExtension("1a"));
+    }
+
+    @Test
     void namesAreCleanedAndCut() {
         assertEquals("OFFICE", PabxNumbers.cleanName("office"));
         assertEquals("NORTH-1", PabxNumbers.cleanName(" north-1 "));

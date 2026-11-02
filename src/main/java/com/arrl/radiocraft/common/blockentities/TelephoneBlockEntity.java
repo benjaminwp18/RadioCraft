@@ -37,6 +37,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +50,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * A desk telephone on a phone PABX (touching it, or on its data wire): every phone needs one. The PABX numbers its
  * phones; a phone's owner can change its extension to any number no other phone on that PABX has. Dial a number (see
  * {@link PabxBlockEntity#resolve}): an extension on the same PABX, or another PABX's master number and an extension
- * there, on the PABXes wired together or linked by microwave. It rings until it is answered (or for 30 seconds).
+ * there, on the PABXes wired together or linked by microwave; on PABXes sharing a master number, a bare extension
+ * reaches them all. An All-Call extension rings several phones, and the first to answer takes the call. It rings until
+ * it is answered (or for 30 seconds).
  * While a call is up, voices near either phone come out of the other at phone quality ({@link #PHONE_QUALITY}):
  * fuller than SSB, and clean, as the link is digital.
  */
@@ -68,6 +71,8 @@ public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectP
 	/** The ring: {@link #RING_ON_TICKS} of bell, then quiet, every {@link #RING_CYCLE_TICKS} (a North American cadence). */
 	public static final int RING_CYCLE_TICKS = 120;
 	public static final int RING_ON_TICKS = 40;
+	/** On the LCD (flashing) when a number is on two phones, so neither can be called. */
+	public static final String EXT_IN_USE = "EXT IN USE";
 
 	public enum State { IDLE, CALLING, RINGING, IN_CALL }
 
@@ -77,6 +82,10 @@ public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectP
 	private State state = State.IDLE;
 	@Nullable
 	private BlockPos partner = null;
+	/** The phones an All-Call has ringing, while this phone waits for one to answer ({@link #partner} is then null). */
+	private final Set<BlockPos> ringing = new HashSet<>();
+	/** This phone's extension is one two things have on its linked PABXes (synced, for the screen). */
+	private boolean extensionInUse = false;
 	/** The other end's number as this phone would dial it (synced, for the screen). */
 	private String partnerNumber = "";
 	/** This phone's number as dialed from another PABX (synced, for the screen); its extension alone without a master number. */
@@ -166,7 +175,7 @@ public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectP
 	/** How {@code viewer} dials this phone: its extension on the same PABX, its full number from anywhere else. */
 	private String numberFrom(TelephoneBlockEntity viewer) {
 		PabxBlockEntity mine = pabx();
-		if(mine != null && mine == viewer.pabx())
+		if(mine != null && mine.linked().contains(viewer.pabx()))
 			return Integer.toString(extension);
 		return mine == null ? Integer.toString(extension) : mine.getMaster() + extension;
 	}
@@ -186,12 +195,11 @@ public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectP
 			PabxBlockEntity pabx = pabx();
 			String number = extension < 0 ? "" : pabx == null ? Integer.toString(extension) : pabx.getMaster() + extension;
 			Map<String, String> reachable = pabx == null || !pabx.isPowered() ? Map.of() : pabx.directory();
-			Set<Integer> locals = new TreeSet<>();
-			if(pabx != null)
-				for(TelephoneBlockEntity phone : pabx.phones())
-					locals.add(phone.getExtension());
-			if(!number.equals(fullNumber) || !reachable.equals(directory) || !locals.equals(localExtensions)) {
+			Set<Integer> locals = pabx == null ? Set.of() : new TreeSet<>(pabx.numbersInUse());
+			boolean inUse = pabx != null && isNumbered() && pabx.getClashes().contains(extension);
+			if(!number.equals(fullNumber) || !reachable.equals(directory) || !locals.equals(localExtensions) || inUse != extensionInUse) {
 				fullNumber = number;
+				extensionInUse = inUse;
 				directory = reachable;
 				localExtensions = locals;
 				sync();
@@ -200,8 +208,12 @@ public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectP
 		if(state == State.IDLE)
 			return;
 		stateTicks++;
+		if(state == State.CALLING && !ringing.isEmpty()) {
+			tickAllCall();
+			return;
+		}
 		TelephoneBlockEntity other = partner == null ? null : at(level, partner);
-		if(other == null || other.partner == null || !other.partner.equals(worldPosition)) {
+		if(other == null || !other.isCalling(worldPosition)) {
 			drop("CALL DROPPED");
 			return;
 		}
@@ -214,12 +226,42 @@ public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectP
 		}
 		if(stateTicks % 20 == 0) { // Still reachable?
 			if(!PabxBlockEntity.connected(pabx(), other.pabx())) {
-				other.drop("CALL DROPPED");
+				if(!other.ringing.remove(worldPosition)) // An All-Call rings on at its other phones.
+					other.drop("CALL DROPPED");
 				drop("CALL DROPPED");
 				return;
 			}
 			lossy = PabxBlockEntity.lossy(pabx(), other.pabx());
 		}
+	}
+
+	/** While an All-Call waits: phones that have gone stop counting, and it ends with none left or no answer. */
+	private void tickAllCall() {
+		ringing.removeIf(pos -> {
+			TelephoneBlockEntity phone = at(level, pos);
+			return phone == null || !worldPosition.equals(phone.partner);
+		});
+		if(ringing.isEmpty())
+			drop("CALL DROPPED");
+		else if(stateTicks >= RING_TICKS) {
+			endRinging(phone -> "MISSED CALL FROM " + phone.partnerNumber);
+			reset("NO ANSWER");
+		}
+	}
+
+	/** Stops every phone an All-Call has ringing, each showing {@code why}. */
+	private void endRinging(java.util.function.Function<TelephoneBlockEntity, String> why) {
+		for(BlockPos pos : ringing) {
+			TelephoneBlockEntity phone = at(level, pos);
+			if(phone != null && worldPosition.equals(phone.partner))
+				phone.reset(why.apply(phone));
+		}
+		ringing.clear();
+	}
+
+	/** True if this phone is calling, or in a call with, the phone at {@code pos}. */
+	private boolean isCalling(BlockPos pos) {
+		return pos.equals(partner) || ringing.contains(pos);
 	}
 
 	@Nullable
@@ -354,8 +396,13 @@ public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectP
 		else if(!pabx.isPowered())
 			status = "NO LINE: PABX HAS NO POWER";
 		else {
-			TelephoneBlockEntity callee = pabx.resolve(number);
-			if(callee == this)
+			PabxBlockEntity.Route route = pabx.route(number);
+			TelephoneBlockEntity callee = route.phones().size() == 1 && !route.allCall() ? route.phones().get(0) : null;
+			if(route.inUse())
+				status = EXT_IN_USE;
+			else if(route.allCall())
+				allCall(route.phones(), number);
+			else if(callee == this)
 				status = "THAT IS THIS PHONE";
 			else if(callee == null)
 				status = "NUMBER " + number + " NOT FOUND";
@@ -378,14 +425,44 @@ public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectP
 		sync();
 	}
 
-	/** Picks up a ringing phone: the call is up. */
+	/** Rings every free phone of {@code phones} but this one. */
+	private void allCall(List<TelephoneBlockEntity> phones, String number) {
+		List<TelephoneBlockEntity> others = phones.stream().filter(phone -> phone != this).toList();
+		List<TelephoneBlockEntity> free = others.stream().filter(phone -> phone.state == State.IDLE).toList();
+		if(others.isEmpty())
+			status = "NO OTHER PHONES";
+		else if(free.isEmpty())
+			status = "BUSY";
+		else {
+			state = State.CALLING;
+			partnerNumber = number;
+			stateTicks = 0;
+			status = "";
+			for(TelephoneBlockEntity callee : free) {
+				ringing.add(callee.worldPosition.immutable());
+				callee.state = State.RINGING;
+				callee.partner = worldPosition;
+				callee.partnerNumber = numberFrom(callee);
+				callee.stateTicks = 0;
+				callee.status = "";
+				callee.sync();
+			}
+		}
+	}
+
+	/** Picks up a ringing phone: the call is up. On an All-Call the first to do so takes it, and the rest stop. */
 	public void answer() {
 		if(level == null || state != State.RINGING || partner == null)
 			return;
 		TelephoneBlockEntity caller = at(level, partner);
-		if(caller == null) {
+		if(caller == null || !caller.isCalling(worldPosition)) {
 			drop("CALL DROPPED");
 			return;
+		}
+		if(caller.ringing.remove(worldPosition)) {
+			caller.endRinging(phone -> "ANSWERED ELSEWHERE");
+			caller.partner = worldPosition;
+			caller.partnerNumber = numberFrom(caller);
 		}
 		state = caller.state = State.IN_CALL;
 		stateTicks = caller.stateTicks = 0;
@@ -397,11 +474,17 @@ public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectP
 		level.playSound(null, worldPosition, SoundEvents.ITEM_FRAME_REMOVE_ITEM, SoundSource.BLOCKS, 0.6F, 1.4F);
 	}
 
-	/** Hangs up, ending the call at both ends. */
+	/** Hangs up, ending the call at both ends. Turning down an All-Call only stops this phone, unless it was the last ringing. */
 	public void hangUp() {
+		if(level != null)
+			endRinging(phone -> "CALL ENDED");
 		if(level != null && partner != null) {
 			TelephoneBlockEntity other = at(level, partner);
-			if(other != null && worldPosition.equals(other.partner))
+			if(other != null && other.ringing.remove(worldPosition)) {
+				if(other.ringing.isEmpty())
+					other.reset("CALL REJECTED");
+			}
+			else if(other != null && worldPosition.equals(other.partner))
 				other.reset(state == State.RINGING ? "CALL REJECTED" : "CALL ENDED");
 		}
 		reset("");
@@ -414,6 +497,7 @@ public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectP
 	private void reset(String why) {
 		state = State.IDLE;
 		partner = null;
+		ringing.clear();
 		partnerPhone = null;
 		partnerNumber = "";
 		stateTicks = 0;
@@ -429,12 +513,12 @@ public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectP
 		sync();
 	}
 
-	/** Changes the extension; false without a PABX, or if another phone on its PABX has it already. */
+	/** Changes the extension; false without a PABX, or if that number is taken on its PABX or one linked to it. */
 	public boolean setExtension(int number) {
 		if(number < 0 || number > PabxBlockEntity.MAX_EXTENSION)
 			return false;
 		PabxBlockEntity pabx = pabx();
-		if(pabx == null || pabx.phones().stream().anyMatch(phone -> phone != this && phone.extension == number))
+		if(pabx == null || (number != extension && pabx.numbersInUse().contains(number)))
 			return false;
 		extension = number;
 		sync();
@@ -520,6 +604,16 @@ public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectP
 		return Math.max(0, extension);
 	}
 
+	/** False until a PABX has given it a number. */
+	public boolean isNumbered() {
+		return extension >= 0;
+	}
+
+	/** True if something else on its linked PABXes has its number, so it cannot be called (client side, synced). */
+	public boolean isExtensionInUse() {
+		return extensionInUse;
+	}
+
 	public State getState() {
 		return state;
 	}
@@ -590,6 +684,7 @@ public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectP
 			for(int number : tag.getIntArray("localExtensions"))
 				locals.add(number);
 			localExtensions = locals;
+			extensionInUse = tag.getBoolean("extensionInUse");
 			status = tag.getString("status");
 			stateSince = tag.getLong("stateSince");
 		}
@@ -605,6 +700,7 @@ public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectP
 		directory.forEach(entries::putString);
 		tag.put("directory", entries);
 		tag.putIntArray("localExtensions", localExtensions.stream().mapToInt(Integer::intValue).toArray());
+		tag.putBoolean("extensionInUse", extensionInUse);
 		tag.putString("status", status);
 		tag.putLong("stateSince", level == null ? 0L : level.getGameTime() - stateTicks);
 		return tag;

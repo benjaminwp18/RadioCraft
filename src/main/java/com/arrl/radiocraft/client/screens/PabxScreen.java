@@ -20,18 +20,19 @@ import org.lwjgl.glfw.GLFW;
 
 /**
  * The phone PABX's settings (maintainer, 2026-10-31): a plain panel at the normal GUI size, so JEI sits beside it.
- * Its master number (exactly {@code pabx_master_digits} digits, or none), its first extension and its name, saved
- * together with Save (or ENTER). The line under Save says what came of it. Texture from tools/pabx_gui.py.
+ * Its master number (exactly {@code pabx_master_digits} digits, or none), its first extension, its All-Call extension
+ * and its name, saved together with Save (or ENTER). The line under Save says what came of it, and "EXT IN USE" flashes
+ * at the bottom while a number clashes with a linked PABX. Texture from tools/pabx_gui.py.
  */
 public class PabxScreen extends AbstractContainerScreen<PabxMenu> {
 
 	private static final ResourceLocation TEXTURE = Radiocraft.id("textures/gui/pabx.png");
-	private static final int WIDTH = 176, HEIGHT = 166;
-	private static final int BOX_X = 8, BOX_WIDTH = 160, MASTER_Y = 30, FIRST_Y = 62, NAME_Y = 94, SAVE_Y = 118, STATUS_Y = 144;
+	private static final int WIDTH = 176, HEIGHT = 192;
+	private static final int BOX_X = 8, BOX_WIDTH = 160, MASTER_Y = 30, FIRST_Y = 58, ALL_CALL_Y = 86, NAME_Y = 114, SAVE_Y = 134, STATUS_Y = 157, CLASH_Y = 178;
 	private static final int INK = 0xFF404040, POWER_ON = 0xFF2E7D32, POWER_OFF = 0xFFAA2222, STATUS_INK = 0xFF303030;
 
 	@Nullable
-	private EditBox master, first, name;
+	private EditBox master, first, allCall, name;
 	/** A problem found before sending (wrong length); null shows the server's answer instead. */
 	@Nullable
 	private Component localStatus = null;
@@ -57,10 +58,12 @@ public class PabxScreen extends AbstractContainerScreen<PabxMenu> {
 		// Keep what was typed across a resize.
 		String masterText = master == null ? pabx.getMaster() : master.getValue();
 		String firstText = first == null ? Integer.toString(pabx.getFirstExtension()) : first.getValue();
+		String allCallText = allCall == null ? pabx.getAllCall() : allCall.getValue();
 		String nameText = name == null ? pabx.getName() : name.getValue();
 
 		master = box(MASTER_Y, tr("master"), pabx.getMasterDigits(), s -> s.isEmpty() || PabxNumbers.digits(s), masterText);
 		first = box(FIRST_Y, tr("first"), PabxNumbers.MAX_EXTENSION_DIGITS, s -> s.isEmpty() || PabxNumbers.digits(s), firstText);
+		allCall = box(ALL_CALL_Y, tr("all_call"), PabxNumbers.MAX_EXTENSION_DIGITS, s -> s.isEmpty() || PabxNumbers.digits(s), allCallText);
 		name = box(NAME_Y, tr("name"), PabxNumbers.MAX_NAME, s -> s.chars().allMatch(c -> PabxNumbers.nameChar((char)c)), nameText);
 		addRenderableWidget(Button.builder(tr("save"), b -> save()).bounds(leftPos + (WIDTH - 60) / 2, topPos + SAVE_Y, 60, 20).build());
 		setInitialFocus(master);
@@ -74,9 +77,9 @@ public class PabxScreen extends AbstractContainerScreen<PabxMenu> {
 		return box;
 	}
 
-	/** Checks the master number's length here, then sends all three; the server checks the rest. */
+	/** Checks the master number's length here, then sends every setting; the server checks the rest. */
 	private void save() {
-		if(master == null || first == null || name == null)
+		if(master == null || first == null || allCall == null || name == null)
 			return;
 		int digits = pabx().getMasterDigits();
 		if(!PabxNumbers.validMaster(master.getValue(), digits)) {
@@ -91,6 +94,7 @@ public class PabxScreen extends AbstractContainerScreen<PabxMenu> {
 		CompoundTag data = new CompoundTag();
 		data.putString("master", master.getValue());
 		data.putString("first", first.getValue());
+		data.putString("allCall", allCall.getValue());
 		data.putString("name", PabxNumbers.cleanName(name.getValue()));
 		SStationPacket.send(pabx().getBlockPos(), "save", data);
 	}
@@ -132,6 +136,7 @@ public class PabxScreen extends AbstractContainerScreen<PabxMenu> {
 		guiGraphics.drawString(font, power, WIDTH - 8 - font.width(power), 6, pabx.isPowered() ? POWER_ON : POWER_OFF, false);
 		guiGraphics.drawString(font, tr("master_label", pabx.getMasterDigits()), BOX_X, MASTER_Y - 10, INK, false);
 		guiGraphics.drawString(font, tr("first_label"), BOX_X, FIRST_Y - 10, INK, false);
+		guiGraphics.drawString(font, tr("all_call_label"), BOX_X, ALL_CALL_Y - 10, INK, false);
 		guiGraphics.drawString(font, tr("name_label", PabxNumbers.MAX_NAME), BOX_X, NAME_Y - 10, INK, false);
 
 		Component status = localStatus;
@@ -143,6 +148,10 @@ public class PabxScreen extends AbstractContainerScreen<PabxMenu> {
 				guiGraphics.drawString(font, line, (WIDTH - font.width(line)) / 2, y, STATUS_INK, false);
 				y += 10;
 			}
+		}
+		if(!pabx.getClashes().isEmpty() && (System.currentTimeMillis() / 400L) % 2L == 0L) {
+			Component clash = tr("ext_in_use", pabx.getClashes().stream().limit(4).map(String::valueOf).collect(java.util.stream.Collectors.joining(", ")));
+			guiGraphics.drawString(font, clash, (WIDTH - font.width(clash)) / 2, CLASH_Y, POWER_OFF, false);
 		}
 	}
 }
