@@ -33,7 +33,7 @@ public class TapeGameTests {
 			audio[i] = (short)(8000 * Math.sin(2 * Math.PI * 600 * i / 48000.0));
 		TapeRecordings.save(helper.getLevel().getServer(), id, audio);
 		ItemStack tape = new ItemStack(RadiocraftItems.TAPE_REEL.get());
-		tape.set(RadiocraftDataComponent.TAPE_CONTENTS.get(), TapeContents.BLANK.withRecording(id, 1));
+		tape.set(RadiocraftDataComponent.TAPE_CONTENTS.get(), TapeContents.BLANK.withRecording(id, "", 1));
 		return tape;
 	}
 
@@ -98,8 +98,8 @@ public class TapeGameTests {
 			player.acceptVoicePacket(null, RepeaterAudio.tone(500.0D, 0.02D, 0.5D).get(0), UUID.randomUUID(), helper.absoluteVec(pos.getCenter()));
 			player.stop();
 			TapeContents contents = TapeItem.contents(player.getTape());
-			helper.assertTrue(contents.isRecorded() && contents.recordingId() != null, "nothing was put on the tape");
-			helper.assertTrue(TapeRecordings.audio(helper.getLevel().getServer(), contents.recordingId()) != null, "the recording is not kept");
+			helper.assertTrue(contents.isRecorded() && contents.recordingUUID() != null, "nothing was put on the tape");
+			helper.assertTrue(TapeRecordings.audio(helper.getLevel().getServer(), contents.recordingUUID()) != null, "the recording is not kept");
 			helper.succeed();
 		});
 	}

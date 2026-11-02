@@ -2,19 +2,15 @@ package com.arrl.radiocraft.client.events;
 
 
 import com.arrl.radiocraft.Radiocraft;
-import com.arrl.radiocraft.client.commands.TapeTestCommands;
+import com.arrl.radiocraft.client.commands.DebugGiveDiscTapeCommand;
 import com.arrl.radiocraft.client.entity.AntennaWireEntityRenderer;
 import com.arrl.radiocraft.client.screens.*;
 import com.arrl.radiocraft.client.screens.radios.*;
-import com.arrl.radiocraft.common.commands.CallsignCommands;
 import com.arrl.radiocraft.common.init.RadiocraftEntityTypes;
 import com.arrl.radiocraft.common.init.RadiocraftBlockEntities;
-import com.arrl.radiocraft.common.blockentities.DeskChargerBlockEntity;
 import com.arrl.radiocraft.client.render.DeskChargerBlockRenderer;
 import com.arrl.radiocraft.client.render.RadioDisplayRenderer;
 import com.arrl.radiocraft.client.render.RadioDisplays;
-import net.minecraft.commands.Commands;
-import net.minecraft.world.level.block.entity.BlockEntityType;
 import com.arrl.radiocraft.common.init.RadiocraftMenuTypes;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -175,6 +171,6 @@ public class ClientSetupEvents {
 
 	@SubscribeEvent
 	public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
-		event.getDispatcher().register(TapeTestCommands.BUILDER);
+		event.getDispatcher().register(DebugGiveDiscTapeCommand.makeBuilder());
 	}
 }

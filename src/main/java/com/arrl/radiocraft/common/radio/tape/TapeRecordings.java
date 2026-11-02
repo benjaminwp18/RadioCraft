@@ -3,8 +3,9 @@ package com.arrl.radiocraft.common.radio.tape;
 import com.arrl.radiocraft.Radiocraft;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.storage.LevelResource;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -23,6 +24,7 @@ public final class TapeRecordings {
 	/** The longest recording on a tape, seconds. */
 	public static final int MAX_SECONDS = 60;
 	private static final int DOWN = 3; // 48 kHz to 16 kHz.
+	private static final String FILE_SUFFIX = ".ulaw";
 
 	private static final Map<UUID, short[]> CACHE = new ConcurrentHashMap<>();
 	private static final Map<UUID, CompletableFuture<short[]>> LOADING = new ConcurrentHashMap<>();
@@ -30,13 +32,41 @@ public final class TapeRecordings {
 	private TapeRecordings() {
 	}
 
+	public static Path recordingsDirectory(@NotNull MinecraftServer server) {
+		return server.getWorldPath(LevelResource.ROOT).resolve(Radiocraft.MOD_ID).resolve("recordings").toAbsolutePath().normalize();
+	}
+
 	/** Where tape {@code id}'s recording is kept (it may not exist). */
-	public static Path file(MinecraftServer server, UUID id) {
-		return server.getWorldPath(LevelResource.ROOT).resolve(Radiocraft.MOD_ID).resolve("recordings").resolve(id + ".ulaw");
+	public static Path file(@NotNull MinecraftServer server, @NotNull UUID id) {
+		return recordingsDirectory(server).resolve(id + FILE_SUFFIX);
+	}
+
+	public static void clearCache() {
+		CACHE.clear();
+		LOADING.clear();
+	}
+
+	public static void deleteAll(@NotNull MinecraftServer server) throws IOException {
+		clearCache();
+		try {
+			File[] files = recordingsDirectory(server).toFile().listFiles();
+			if (files == null) {
+				throw new IOException("Couldn't open the recordings folder: " + recordingsDirectory(server));
+			}
+			for (File file : files) {
+				if (!file.isDirectory() && file.getName().endsWith(FILE_SUFFIX)) {
+					if (!file.delete()) {
+						throw new IOException("Panicked after failing to delete a recording file");
+					}
+				}
+			}
+		} catch (SecurityException e) {
+			throw new IOException(e);
+		}
 	}
 
 	/** Saves {@code audio} (48 kHz) as the recording of tape {@code id}. */
-	public static void save(MinecraftServer server, UUID id, short[] audio) {
+	public static void save(@NotNull MinecraftServer server, @NotNull UUID id, short[] audio) {
 		CACHE.put(id, expand(compress(audio))); // As it will sound played back.
 		byte[] data = compress(audio);
 		Path file = file(server, id);
@@ -54,8 +84,7 @@ public final class TapeRecordings {
 	}
 
 	/** The recording of tape {@code id} at 48 kHz, or null while it is read in the background (empty if there is none). */
-	@Nullable
-	public static short[] audio(MinecraftServer server, UUID id) {
+	public static short[] audio(@NotNull MinecraftServer server, @NotNull UUID id) {
 		short[] ready = CACHE.get(id);
 		if(ready != null)
 			return ready;

@@ -302,8 +302,10 @@ public class RadiocraftServerConfig {
 		BUILDER.pop();
 
 		BUILDER.push("Tapes");
-		TAPES_IN_WORLD = BUILDER.comment(" Where the server's tape recordings (.ogg files) are: false for config/radiocraft/tapes, shared by every world;",
-				" true for <world>/radiocraft/tapes, kept with the world. A 'numbers' folder inside holds what numbers stations read out")
+		TAPES_IN_WORLD = BUILDER.comment(" Where the server's preloaded/found tape recordings (.ogg files; not user uploads, which are always per-world) are:",
+				" false for config/radiocraft/tapes, shared by every world;",
+				" true for <world>/radiocraft/tapes, kept with the world.",
+				" A 'numbers' folder inside holds what numbers stations read out")
 				.define("tapes_in_world", false);
 		BUILDER.pop();
 
@@ -577,7 +579,7 @@ public class RadiocraftServerConfig {
 		BUILDER.pop();
 
 		BUILDER.push("Moderation");
-		BUILDER.comment(" A log of radio traffic for server moderators, kept in <world>/radiocraft/moderation: each transmission once, at",
+		BUILDER.comment(" A log of radio traffic & tape recordings for server moderators, kept in <world>/radiocraft/moderation: each transmission once, at",
 				" its source, with who heard it. Off by default. Consent laws (two-party US states, GDPR) apply to a server that",
 				" turns it on.");
 		MODERATION_RECORD_RADIO = BUILDER.comment(" Log transmissions over radios: player voice as it arrived, data, CW, and notes for the rest").define("moderation_record_radio", false);

@@ -47,7 +47,7 @@ public class TapeItem extends Item {
 	public static ItemStack found(ItemStack stack, @Nullable MinecraftServer server, RandomSource random, String subfolder) {
 		List<String> tracks = server == null ? List.of() : TapeLibrary.tracks(server, subfolder);
 		String track = tracks.isEmpty() ? "" : tracks.get(random.nextInt(tracks.size()));
-		stack.set(RadiocraftDataComponent.TAPE_CONTENTS.get(), new TapeContents(random.nextInt(TapeContents.COLORWAYS), track, "", 0));
+		stack.set(RadiocraftDataComponent.TAPE_CONTENTS.get(), new TapeContents(random.nextInt(TapeContents.COLORWAYS), track, "", "", 0));
 		return stack;
 	}
 
@@ -69,13 +69,26 @@ public class TapeItem extends Item {
 
 	@Override
 	public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
+		// TODO: Not annotated parameter overrides @ParametersAreNonnullByDefault parameter
+		// 		 https://stackoverflow.com/questions/5516157/how-do-i-get-parametersarenonnullbydefault-to-work
+		//       @ParametersAreNonnullByDefault is in javax.annotations (not in intellij), & maybe a minecraft native/forge annotations package??
+		//       Also see: https://jspecify.dev/docs/start-here/
 		super.appendHoverText(stack, context, tooltip, flag);
 		TapeContents contents = contents(stack);
-		if(contents.isFound())
+		if (contents.isFound()) {
 			tooltip.add(Component.literal("\"" + label(contents.track()) + "\"").withStyle(ChatFormatting.GRAY, ChatFormatting.ITALIC));
-		else if(contents.isRecorded())
-			tooltip.add(Component.translatable("item.radiocraft.tape_reel.recorded", contents.seconds() / 60, String.format(Locale.ROOT, "%02d", contents.seconds() % 60)).withStyle(ChatFormatting.GRAY));
-		else
+		}
+		else if (contents.isRecorded()) {
+			tooltip.add(Component.translatable("item.radiocraft.tape_reel.recorded_template",
+					contents.name().isEmpty() ?
+							Component.translatable("item.radiocraft.tape_reel.recorded_label") :
+							contents.name(),
+					contents.seconds() / 60,
+					String.format(Locale.ROOT, "%02d", contents.seconds() % 60)
+			).withStyle(ChatFormatting.GRAY));
+		}
+		else {
 			tooltip.add(Component.translatable("item.radiocraft.tape_reel.blank").withStyle(ChatFormatting.GRAY));
+		}
 	}
 }

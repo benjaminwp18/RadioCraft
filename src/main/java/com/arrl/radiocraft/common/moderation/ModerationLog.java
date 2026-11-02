@@ -11,6 +11,7 @@ import com.arrl.radiocraft.common.radio.antenna.AntennaCWPacket;
 import com.arrl.radiocraft.common.radio.antenna.AntennaVoicePacket;
 import com.arrl.radiocraft.common.radio.data.TncPacket;
 import com.arrl.radiocraft.common.radio.morse.CWBuffer;
+import com.arrl.radiocraft.common.radio.tape.TapeRecordings;
 import com.arrl.radiocraft.common.radio.voice.Afsk;
 import com.arrl.radiocraft.common.radio.voice.RadiocraftVoicePlugin;
 import com.arrl.radiocraft.common.radio.voice.handheld.DockedHandheld;
@@ -725,13 +726,13 @@ public final class ModerationLog {
 		audit(by, byName, "play", id, "");
 		if(record.tapeRecording() != null) { // A tape played, or recorded: the tape's own audio.
 			return store.readTape(record, liveTape(record.tapeRecording()))
-					.thenApply(bytes -> new Playback(record, List.of(), com.arrl.radiocraft.common.radio.tape.TapeRecordings.decode(bytes)));
+					.thenApply(bytes -> new Playback(record, List.of(), TapeRecordings.decode(bytes)));
 		}
 		return store.readFrames(record).thenApply(frames -> new Playback(record, frames, new short[0]));
 	}
 
 	private Path liveTape(@Nullable UUID recording) {
-		return recording == null ? store.root().resolve("none") : com.arrl.radiocraft.common.radio.tape.TapeRecordings.file(server, recording);
+		return recording == null ? store.root().resolve("none") : TapeRecordings.file(server, recording);
 	}
 
 	/** Flags a transmission (its audio copied to the kept folder, kept past retention); audit "flag". Completes with the record, null if unknown. */

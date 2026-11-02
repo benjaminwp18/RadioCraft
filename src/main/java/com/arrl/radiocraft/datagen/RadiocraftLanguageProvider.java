@@ -78,7 +78,8 @@ public class RadiocraftLanguageProvider extends LanguageProvider {
 			provider.addBlock(RadiocraftBlocks.TAPE_PLAYER, "Tape Player");
 			provider.add("container.radiocraft.tape_player", "Tape Player");
 			provider.add("item.radiocraft.tape_reel.blank", "Blank");
-			provider.add("item.radiocraft.tape_reel.recorded", "Recorded, %s:%s");
+			provider.add("item.radiocraft.tape_reel.recorded_template", "%s, %s:%s");
+			provider.add("item.radiocraft.tape_reel.recorded_label", "Recorded");
 			provider.add("screen.radiocraft.commercial_radio_module.no_band", "That frequency is in no band");
 			provider.add("block.radiocraft.commercial_radio_module.sealed", "The cabinet is sealed. Whatever it sends, it sends on its own.");
 			addCrystalRadio(provider, RadiocraftItems.HF_RADIO_10M_VARIANTS, "10m Radio");

@@ -3,10 +3,12 @@ package com.arrl.radiocraft.common.commands;
 import com.arrl.radiocraft.Radiocraft;
 import com.arrl.radiocraft.api.weather.WeatherSource;
 import com.arrl.radiocraft.api.weather.WeatherSources;
+import com.arrl.radiocraft.common.data.TapeRecordingSavedData;
+import com.arrl.radiocraft.common.radio.tape.TapeLibrary;
+import com.arrl.radiocraft.common.radio.tape.TapeRecordings;
 import com.arrl.radiocraft.common.radio.weather.WeatherReports;
 import com.arrl.radiocraft.common.radio.wefax.WefaxChart;
 import com.arrl.radiocraft.common.radio.wefax.WefaxPrints;
-import com.arrl.radiocraft.RadiocraftServerConfig;
 import com.arrl.radiocraft.api.antenna.AntennaTypes;
 import com.arrl.radiocraft.api.benetworks.BENetwork;
 import com.arrl.radiocraft.api.benetworks.BENetworkObject;
@@ -44,9 +46,11 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -65,6 +69,7 @@ import java.util.UUID;
  *     <li>/rcdebug solar - current solar weather and time of day for this dimension</li>
  *     <li>/rcdebug terrain [reset] - terrain map size and what terrain has cost so far (reset clears the counters)</li>
  *     <li>/rcdebug terrain path &lt;from&gt; &lt;to&gt; &lt;band&gt; - what terrain does to a signal between two points</li>
+ *     <li>/rcdebug tapes [list|reload]</li>
  * </ul>
  * Changes the world (stand-ins for player actions):
  * <ul>
@@ -75,6 +80,9 @@ import java.util.UUID;
  *     <li>/rcdebug transmit &lt;pos&gt; - send one frame of tone from an SSB radio, as if someone spoke into it</li>
  *     <li>/rcdebug key &lt;pos&gt; - key one buffer of morse from a CW radio</li>
  *     <li>/rcdebug parrot &lt;pos&gt; &lt;seconds&gt;|off - make a radio echo what it receives after a delay</li>
+ *     <li>/rcdebug tapes delete_all_user_tapes</li>
+ *     <li>/rcdebug tapes give found_track &lt;track name&gt;</li>
+ *     <li>/rcdebug tapes give music_disc &lt;disc resource location&gt; (defined in client/commands/DebugGiveDiscTapeCommand.java)</li>
  * </ul>
  */
 public class DebugCommands {
@@ -91,11 +99,11 @@ public class DebugCommands {
 			.then(Commands.literal("flipbundles").then(Commands.argument("from", BlockPosArgument.blockPos()).then(Commands.argument("to", BlockPosArgument.blockPos())
 					.executes(DebugCommands::flipBundles))))
 			.then(Commands.literal("tapes").executes(DebugCommands::tapes)
-					.then(Commands.literal("give").then(Commands.argument("track", StringArgumentType.greedyString()).executes(DebugCommands::giveTape)))
-					.then(Commands.literal("reload").executes(ctx -> {
-						com.arrl.radiocraft.common.radio.tape.TapeLibrary.clearCache();
-						return tapes(ctx);
-					})))
+					.then(Commands.literal("list").executes(DebugCommands::listTapes))
+					.then(Commands.literal("give")
+							.then(Commands.literal("found_track").then(Commands.argument("track", StringArgumentType.greedyString()).executes(DebugCommands::giveTape))))
+					.then(Commands.literal("reload").executes(DebugCommands::reloadTapes))
+					.then(Commands.literal("delete_all_user_tapes").executes(DebugCommands::deleteAllUserTapes)))
 			.then(Commands.literal("module").then(Commands.argument("pos", BlockPosArgument.blockPos()).executes(DebugCommands::module)
 					.then(Commands.argument("program", StringArgumentType.word()).then(Commands.argument("mhz", DoubleArgumentType.doubleArg(0))
 							.executes(DebugCommands::setModule)))))
@@ -589,14 +597,12 @@ public class DebugCommands {
 		return send(ctx, out);
 	}
 
-	/** The server's tapes, and where they are kept. */
+	/** List where the server's tapes are kept */
 	private static int tapes(CommandContext<CommandSourceStack> ctx) {
 		var server = ctx.getSource().getServer();
 		List<String> out = new ArrayList<>();
-		out.add("tape folder: " + com.arrl.radiocraft.common.radio.tape.TapeLibrary.folder(server));
-		List<String> tracks = new ArrayList<>(com.arrl.radiocraft.common.radio.tape.TapeLibrary.tracks(server, ""));
-		tracks.addAll(com.arrl.radiocraft.common.radio.tape.TapeLibrary.tracks(server, com.arrl.radiocraft.common.radio.tape.TapeLibrary.NUMBERS));
-		out.add(tracks.isEmpty() ? "no .ogg files (numbers stations read out the ones in numbers/)" : String.join(", ", tracks));
+		out.add("Preloaded/found (.ogg, e.g. numbers stations) tapes folder: " + TapeLibrary.folder(server));
+		out.add("User recordings/uploads (.ulaw) folder: " + TapeRecordings.recordingsDirectory(server));
 		return send(ctx, out);
 	}
 
@@ -606,10 +612,50 @@ public class DebugCommands {
 		String track = StringArgumentType.getString(ctx, "track");
 		net.minecraft.world.item.ItemStack tape = new net.minecraft.world.item.ItemStack(com.arrl.radiocraft.common.init.RadiocraftItems.TAPE_REEL.get());
 		tape.set(com.arrl.radiocraft.common.init.RadiocraftDataComponent.TAPE_CONTENTS.get(), new com.arrl.radiocraft.common.datacomponents.TapeContents(
-				player.getRandom().nextInt(com.arrl.radiocraft.common.datacomponents.TapeContents.COLORWAYS), track, "", 0));
+				player.getRandom().nextInt(com.arrl.radiocraft.common.datacomponents.TapeContents.COLORWAYS), track, "", "", 0));
 		if(!player.getInventory().add(tape))
 			player.drop(tape, false);
 		return send(ctx, List.of("gave a tape of " + track));
+	}
+
+	private static int listTapes(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+		var server = ctx.getSource().getServer();
+		List<String> out = new ArrayList<>();
+		out.add("");
+
+		List<String> tracks = new ArrayList<>(TapeLibrary.tracks(server, ""));
+		tracks.addAll(TapeLibrary.tracks(server, TapeLibrary.NUMBERS));
+		out.add("=== Preloaded/found (.ogg) tapes" + (tracks.isEmpty() ? " (none)" : "") + " ===");
+		out.addAll(tracks.stream().map(s -> "  " + s).toList());
+
+		TapeRecordingSavedData savedData = TapeRecordingSavedData.get(ctx.getSource().getServer().overworld());
+		List<String> uploads = savedData.viewAllTapes().stream().map(TapeRecordingSavedData.TapeRecordingEntry::toString).toList();
+		out.add("\n=== User recordings/uploads (.ulaw) tapes" + (uploads.isEmpty() ? " (none)" : "") + " ===");
+		out.addAll(uploads.stream().map(s -> "  " + s).toList());
+		out.add("");
+
+		return send(ctx, out);
+	}
+
+	private static int reloadTapes(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+		TapeLibrary.clearCache();
+		TapeRecordings.clearCache();
+		TapeRecordingSavedData.get(ctx.getSource().getLevel());
+		return send(ctx, List.of("Reloaded tape caches"));
+	}
+
+	private static int deleteAllUserTapes(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+		MinecraftServer server = ctx.getSource().getServer();
+		TapeRecordingSavedData.get(server.overworld()).clearTapeDatabase();
+		List<String> out = new ArrayList<>();
+		out.add("Successfully cleared database of uploaded music disc tape recordings");
+		try {
+			TapeRecordings.deleteAll(server);
+			out.add("Successfully deleted all user tape recording files on disk");
+		} catch (IOException e) {
+			out.add("Failed to delete some user tape recording files on disk. Do it yourself at " + TapeRecordings.recordingsDirectory(server));
+		}
+		return send(ctx, out);
 	}
 
 	/** A commercial radio module's program and frequency. */

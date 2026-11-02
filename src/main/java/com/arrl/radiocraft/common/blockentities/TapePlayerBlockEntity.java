@@ -8,6 +8,7 @@ import com.arrl.radiocraft.common.init.RadiocraftBlockEntities;
 import com.arrl.radiocraft.common.init.RadiocraftDataComponent;
 import com.arrl.radiocraft.common.items.TapeItem;
 import com.arrl.radiocraft.common.menus.TapePlayerMenu;
+import com.arrl.radiocraft.common.moderation.ModerationHooks;
 import com.arrl.radiocraft.common.radio.VoiceTransmitters;
 import com.arrl.radiocraft.common.radio.tape.TapeLibrary;
 import com.arrl.radiocraft.common.radio.tape.TapeRecordings;
@@ -17,7 +18,6 @@ import com.arrl.radiocraft.common.radio.voice.RepeaterAudio;
 import de.maxhenkel.voicechat.api.audiochannel.LocationalAudioChannel;
 import de.maxhenkel.voicechat.api.opus.OpusEncoder;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -117,15 +117,14 @@ public class TapePlayerBlockEntity extends BlockEntity implements MenuProvider, 
 	}
 
 	/** The tape's audio: null while it loads, empty if there is nothing on it. */
-	@Nullable
 	private short[] audio(ServerLevel level) {
 		TapeContents contents = contents();
 		if(tape.isEmpty() || contents.isBlank())
 			return new short[0];
 		if(contents.isFound())
 			return TapeLibrary.audio(level.getServer(), contents.track());
-		UUID id = contents.recordingId();
-		return id == null ? new short[0] : TapeRecordings.audio(level.getServer(), id);
+		UUID uuid = contents.recordingUUID();
+		return uuid == null ? new short[0] : TapeRecordings.audio(level.getServer(), uuid);
 	}
 
 	// -------------------- CONTROLS --------------------
@@ -288,7 +287,7 @@ public class TapePlayerBlockEntity extends BlockEntity implements MenuProvider, 
 	private void keyRadios(ServerLevel level) {
 		releaseRadios();
 		TapeContents contents = contents(); // The moderation log keeps a pointer to a player tape, a note for a server tape.
-		com.arrl.radiocraft.common.moderation.ModerationHooks.tapePlaying(voiceId, worldPosition, contents.recordingId(), contents.track());
+		ModerationHooks.tapePlaying(voiceId, worldPosition, contents.recordingUUID(), contents.track());
 		for(RadioBlockEntity radio : com.arrl.radiocraft.common.be_networks.DataWire.linked(level, worldPosition, RadioBlockEntity.class)) {
 			radio.setPTTDown(true);
 			keyed.add(radio);
@@ -354,11 +353,12 @@ public class TapePlayerBlockEntity extends BlockEntity implements MenuProvider, 
 		}
 		if(audio.length == 0 || !(level instanceof ServerLevel serverLevel) || tape.isEmpty())
 			return;
-		UUID id = contents().recordingId() != null ? contents().recordingId() : UUID.randomUUID();
+		UUID recordingId = contents().recordingUUID();
+		UUID id = recordingId != null ? recordingId : UUID.randomUUID();
 		TapeRecordings.save(serverLevel.getServer(), id, audio);
 		int seconds = Math.round(audio.length / (float)RadioVoiceProcessor.SAMPLE_RATE);
-		tape.set(RadiocraftDataComponent.TAPE_CONTENTS.get(), contents().withRecording(id, seconds));
-		com.arrl.radiocraft.common.moderation.ModerationHooks.tapeRecorded(serverLevel, worldPosition, id, seconds, speakers); // For the moderation log's tape search.
+		tape.set(RadiocraftDataComponent.TAPE_CONTENTS.get(), contents().withRecording(id, "", seconds));
+		ModerationHooks.tapeRecorded(serverLevel, worldPosition, id, seconds, speakers); // For the moderation log's tape search.
 	}
 
 	// -------------------- STATUS --------------------
