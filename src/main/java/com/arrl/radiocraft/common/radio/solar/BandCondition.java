@@ -4,7 +4,7 @@ import java.util.Locale;
 
 /**
  * How well one HF band carries sky-wave (skip) signals under the current solar weather, as the solar weather station
- * reports it. The multiplier scales the skip strength: a weaker signal plays quieter against the same static, so a
+ * reports it. The multiplier scales the skip strength: a weaker signal sits lower against the same static, so a
  * poor band is hard to copy and a closed one is barely there. Line of sight (ground wave) is not affected.
  */
 public enum BandCondition {

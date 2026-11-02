@@ -441,7 +441,7 @@ public abstract class RadioBlockEntity extends BlockEntity implements ITogglable
         Detuning.Effect effect = getDetuning(packet.getFrequency());
         if(!effect.audible() || effect.pitchShiftHz() != 0.0D || effect.splatter() > 0.0D)
             return false;
-        double strength = packet.getStrength() * effect.strength();
+        double strength = packet.getStrength() * effect.strength() * desense(packet);
         boolean skip = isSkipPath(packet);
         if(skip)
             strength *= ReceiverMix.fading(level.getGameTime() / 20.0D, pathSeed(packet), RadiocraftServerConfig.SKIP_FADING_DEPTH.get());
@@ -1034,7 +1034,7 @@ public abstract class RadioBlockEntity extends BlockEntity implements ITogglable
         if(effect.isNone())
             return false;
         boolean skip = isSkipPath(packet);
-        double strength = packet.getStrength();
+        double strength = packet.getStrength() * desense(packet);
         if(skip && level != null) // Skip signals swell and fade (QSB); line of sight holds steady.
             strength *= ReceiverMix.fading(level.getGameTime() / 20.0D, pathSeed(packet), RadiocraftServerConfig.SKIP_FADING_DEPTH.get());
         // A modem beside the radio copies the tones whatever mode the radio's speaker is in, as packets decode.
@@ -1059,8 +1059,12 @@ public abstract class RadioBlockEntity extends BlockEntity implements ITogglable
             rasp = blackoutDistortion(); // Local HF in a blackout gets through, but rough.
         // FM holds its volume as the signal fades and gets noisier instead; SSB sinks into the noise.
         double level = isFM() ? speakerGain : ReceiverMix.voiceLevel(strength, getNoiseFloor(skip)) * speakerGain;
-        getVoiceReceiver().receive(packet, level, rasp, effect.pitchShiftHz(), effect.splatter(),
-                Detuning.splatterOn(1.0D, getAdjacentQrm(), strength), isFM() ? strength : -1.0D);
+        double blocks = packet.getSource() == null || packet.getSource().getAntennaPos() == null ? Double.MAX_VALUE
+                : Math.sqrt(Sublevels.distSqr(this.level, packet.getSource().getAntennaPos().position(), worldPosition));
+        boolean ssbHf = !isFM() && band != null && !band.isVhf();
+        getVoiceReceiver().receive(packet, level, rasp, effect.pitchShiftHz(), isFM() ? effect.splatter() : Math.max(effect.splatter(), ReceiverMix.overload(blocks)),
+                Detuning.splatterOn(1.0D, getAdjacentQrm(), strength), isFM() ? strength : -1.0D, strength * ReceiverMix.nearness(blocks),
+                skip && ssbHf ? RadiocraftServerConfig.SKIP_MULTIPATH_DEPTH.get() : 0.0D);
         return true;
     }
 
@@ -1112,6 +1116,15 @@ public abstract class RadioBlockEntity extends BlockEntity implements ITogglable
         if(band == null || packet.getSource() == null || packet.getSource().getAntennaPos() == null)
             return false;
         return Sublevels.distSqr(level, packet.getSource().getAntennaPos().position(), worldPosition) > (double)band.losRange() * band.losRange();
+    }
+
+    /** What a transmitter close to this radio's antenna leaves of {@code packet}'s signal ({@link com.arrl.radiocraft.common.radio.TransmitterLog#desense}). */
+    protected double desense(IAntennaPacket packet) {
+        if(level == null)
+            return 1.0D;
+        com.arrl.radiocraft.api.antenna.IAntenna own = packet.getDestination();
+        BlockPos at = own == null || own.getAntennaPos() == null ? worldPosition : own.getAntennaPos().position();
+        return com.arrl.radiocraft.common.radio.TransmitterLog.desense(level, at, packet.getFrequency(), packet.getSource(), own);
     }
 
     /** A number for the path between the sender and this radio, so each path fades on its own. */
@@ -1200,7 +1213,7 @@ public abstract class RadioBlockEntity extends BlockEntity implements ITogglable
     }
 
     private boolean tickSyncedSignal(long gameTime) {
-        double current = lastSignalGameTime >= 0 && gameTime - lastSignalGameTime <= SIGNAL_SYNC_HOLD_TICKS ? lastSignalStrength : 0.0D;
+        double current = lastSignalGameTime >= 0 && gameTime - lastSignalGameTime <= SIGNAL_SYNC_HOLD_TICKS ? agcSignal : 0.0D;
         double rounded = Math.round(current * 20.0D) / 20.0D;
         if(current > 0.0D && rounded == 0.0D)
             rounded = 0.05D; // A faint signal still counts.
@@ -1212,9 +1225,23 @@ public abstract class RadioBlockEntity extends BlockEntity implements ITogglable
 
     /** Remembers the strength and game time of the last signal that reached this radio. */
     protected void recordSignal(double strength) {
+        long now = level == null ? 0L : level.getGameTime();
         lastSignalStrength = strength;
-        lastSignalGameTime = level == null ? 0L : level.getGameTime();
+        lastSignalGameTime = now;
+        if(strength >= agcSignal || now - agcSignalGameTime > AGC_SIGNAL_TICKS) {
+            agcSignal = strength;
+            agcSignalGameTime = now;
+        }
     }
+
+    /**
+     * What the static ducks under: with stations talking at once the strongest sets the AGC, not whichever frame came
+     * last, so a weaker one does not bring the static up between the stronger one's frames. It falls to a weaker signal
+     * once nothing stronger has come for {@link #AGC_SIGNAL_TICKS}.
+     */
+    private volatile double agcSignal = 0.0D;
+    private volatile long agcSignalGameTime = -1L;
+    private static final int AGC_SIGNAL_TICKS = 2;
 
     /** When a signal last came in strong enough over the noise for a modem to copy it, -1 for never. Server side. */
     private volatile long lastCopyGameTime = -1L;

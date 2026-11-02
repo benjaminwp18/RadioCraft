@@ -105,6 +105,10 @@ public class RadiocraftServerConfig {
 	public static final ModConfigSpec.ConfigValue<Double> VOICE_LEVEL_SMOOTHING;
 	public static final ModConfigSpec.ConfigValue<Double> VHF_NOISE_FLOOR;
 	public static final ModConfigSpec.ConfigValue<Double> SKIP_FADING_DEPTH;
+	public static final ModConfigSpec.ConfigValue<Double> SKIP_MULTIPATH_DEPTH;
+	public static final ModConfigSpec.ConfigValue<Double> DESENSE_RANGE;
+	public static final ModConfigSpec.ConfigValue<Double> DESENSE_SEPARATION_MHZ;
+	public static final ModConfigSpec.ConfigValue<Double> DESENSE_DEPTH;
 	public static final ModConfigSpec.ConfigValue<Double> LOS_SOLAR_NOISE_SHARE;
 	public static final ModConfigSpec.ConfigValue<Double> BLACKOUT_LOS_DISTORTION;
 
@@ -376,6 +380,10 @@ public class RadiocraftServerConfig {
 				" walking into a weak spot fades into static instead of stepping. 0 follows every change at once").defineInRange("voice_level_smoothing", 0.15, 0.0, 2.0);
 		VHF_NOISE_FLOOR = BUILDER.comment(" Receiver noise on VHF (FM), which has no solar noise: how far a weak VHF signal is pushed down").defineInRange("vhf_noise_floor", 0.15, 0.0, 1.0);
 		SKIP_FADING_DEPTH = BUILDER.comment(" How deep skip signals fade in and out (QSB): 0 steady, 1 fades to nothing").defineInRange("skip_fading_depth", 0.5, 0.0, 1.0);
+		SKIP_MULTIPATH_DEPTH = BUILDER.comment(" How hollow and watery HF skip voice sounds from a second sky path arriving a moment late: 0 clean, 1 at its deepest").defineInRange("skip_multipath_depth", 0.6, 0.0, 1.0);
+		DESENSE_RANGE = BUILDER.comment(" Blocks within which a transmitting antenna desenses a receiving one, even on another frequency").defineInRange("desense_range", 5.0, 0.0, 32.0);
+		DESENSE_SEPARATION_MHZ = BUILDER.comment(" Frequency separation, MHz, at which a nearby transmitter no longer desenses a receiver; it scales down to this").defineInRange("desense_separation_mhz", 2.0, 0.001, 100.0);
+		DESENSE_DEPTH = BUILDER.comment(" Most of a received signal's strength a transmitter right beside the antenna on its frequency can take: 0 no desense, 1 all of it").defineInRange("desense_depth", 0.75, 0.0, 1.0);
 		LOS_SOLAR_NOISE_SHARE = BUILDER.comment(" Share of the solar noise a line of sight (local) signal is copied against: 0.5 keeps local contacts working at half range in a blackout, 1 makes a blackout silence them too").defineInRange("los_solar_noise_share", 0.5, 0.0, 1.0);
 		BLACKOUT_LOS_DISTORTION = BUILDER.comment(" How rough a line of sight HF voice sounds in a blackout: 0 clean, 1 a heavy flutter (the solar noise above poor sets how much of it)").defineInRange("blackout_los_distortion", 0.4, 0.0, 1.0);
 		BUILDER.pop();

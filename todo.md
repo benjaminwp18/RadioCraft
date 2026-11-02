@@ -546,6 +546,11 @@ Models and textures we want drawn by someone else are listed in [doc/ModelDesign
   - [x] Maintainer's models in (2026-10-27): `telephone_wallmount.json` (drawn lying down, stood up by blockstate x 90)
     and `phone_item.json` (renamed from `phone_Item.json`); the script works out the handset item's display slots
   - [ ] Keep linked radios' chunks loaded? (today a far end in an unloaded chunk drops the link)
+  - [x] SSB with several stations (maintainer, 2026-11-02): weak voices keep their level and the static stays up with
+    them; a mix weights stations by strength and nearness (`ReceiverMix.nearness`), with one shared AGC, small per-station
+    pitch offsets, a late sky path on HF skip and slight overload from a transmitter right beside the receiver. A transmitting antenna
+    within 5 blocks desenses a receiving one, FM or SSB, scaling to nothing at 2 MHz apart (not on repeater inputs). Each is
+    a tuning guess until a playtest (doc/NeedsTesting.md).
   - [x] Linked PABXes and All-Call (maintainer, 2026-11-02): PABXes on one network with the same master number dial
     each other's bare extensions; a number used twice is dead and flashes EXT IN USE. An All-Call extension rings all
     a PABX's phones, and those of linked PABXes with the same one; the first to answer takes it. `PabxGameTests`.

@@ -8,6 +8,7 @@ import com.arrl.radiocraft.RadiocraftServerConfig;
  * <ol>
  *     <li>Off frequency only ({@link Detuning}): the transmitter's passband, then a frequency shift by the pitch error,
  *     so the part of the voice that slides out of the receiver's passband is lost. Splatter on top, when asked.</li>
+ *     <li>Skip only: a second sky path arriving a moment late and drifting in strength, which hollows the voice.</li>
  *     <li>Band-pass to the voice channel (300-2700 Hz for SSB): no deep bass, no airy highs.</li>
  *     <li>AGC: brings quiet and loud talkers to the same steady level, fast to duck a shout, slow to come back up.</li>
  *     <li>Soft clipping: a little speaker overdrive on the peaks.</li>
@@ -76,9 +77,18 @@ public class RadioVoiceProcessor {
 	private int fmGateLeft = 0;
 	private double fmGate = 1.0D;
 	private double fmHiss = 0.0D;
+	private final double[] pathDelay = new double[MAX_PATH_DELAY];
+	private int pathAt = 0;
+	private double pathGain = 0.0D;
+	private double pathSeconds = 0.0D;
+	private final double pathPhase = (System.nanoTime() & 0xFFFF) / 65536.0D * 2.0D * Math.PI; // Each path drifts on its own.
+	private final int pathSamples = (int)(SAMPLE_RATE * (0.001D + 0.0015D * ((System.nanoTime() >>> 3 & 0xFF) / 255.0D))); // 1 to 2.5 ms late.
 	private double levelNow = -1.0D; // The smoothed output level; below 0 until the first frame.
 	private double signalNow = -1.0D; // The smoothed FM signal, the same way.
 	private double smoothSeconds = 0.0D; // From the last frame's settings, for fmFade.
+
+	/** Longest late sky path, samples (5 ms). */
+	private static final int MAX_PATH_DELAY = 240;
 
 	/** Loudness of the static an FM receiver plays with the squelch open on nothing, as a fraction of full scale. */
 	static final double FM_STATIC = 0.3D;
@@ -144,6 +154,15 @@ public class RadioVoiceProcessor {
 	 * @param qrm          Splatter from a signal next door (FM), 0 to 1; it crackles whether or not this one is talking.
 	 */
 	public short[] process(short[] pcm, Settings settings, double level, double rasp, double pitchShiftHz, double splatter, double qrm) {
+		return process(pcm, settings, level, rasp, pitchShiftHz, splatter, qrm, 0.0D);
+	}
+
+	/**
+	 * As above, for a signal that came by sky.
+	 *
+	 * @param multipath How strong the late sky path gets, 0 (none) to 1 (as strong as the first).
+	 */
+	public short[] process(short[] pcm, Settings settings, double level, double rasp, double pitchShiftHz, double splatter, double qrm, double multipath) {
 		smoothSeconds = settings.smoothSeconds();
 		if(levelNow < 0.0D)
 			levelNow = level;
@@ -168,6 +187,10 @@ public class RadioVoiceProcessor {
 		double splatterAttack = coefficient(0.002D);
 		double splatterRelease = coefficient(0.05D);
 		double flutterSmooth = coefficient(1.0D / 40.0D); // QRM bursts at a few tens of Hz: crackle, not steady hiss.
+		pathSeconds += pcm.length / SAMPLE_RATE;
+		double pathWave = 0.6D * Math.sin(pathSeconds * 2.3D + pathPhase) + 0.4D * Math.sin(pathSeconds * 0.83D + pathPhase * 1.7D);
+		double pathWanted = multipath * (0.5D + 0.5D * pathWave);
+		double pathStep = (pathWanted - pathGain) / Math.max(1, pcm.length);
 
 		for(int i = 0; i < pcm.length; i++) {
 			double x = pcm[i] / 32768.0D;
@@ -194,6 +217,14 @@ public class RadioVoiceProcessor {
 				qrmFlutter = flutterSmooth * qrmFlutter + (1.0D - flutterSmooth) * nextRandom();
 				double burst = Math.max(0.0D, qrmFlutter * 2.0D - 0.8D); // Mostly quiet, with bursts.
 				x += qrm * 0.5D * burst * (nextRandom() * 2.0D - 1.0D);
+			}
+
+			if(multipath > 0.0D || pathGain > 0.0D) {
+				pathGain += pathStep;
+				double late = pathDelay[(pathAt + MAX_PATH_DELAY - pathSamples) % MAX_PATH_DELAY];
+				pathDelay[pathAt] = x;
+				pathAt = (pathAt + 1) % MAX_PATH_DELAY;
+				x += pathGain * late;
 			}
 
 			for(Biquad filter : filters)

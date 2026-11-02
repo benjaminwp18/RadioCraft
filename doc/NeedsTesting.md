@@ -8,7 +8,7 @@ writes back here: `- [ ]` not tested, `- [x]` passed, `- [!]` needs work, with `
 `![caption](testing_shots/...)` screenshots indented under the item. Whoever picks up a `[!]` item fixes it (or moves
 it to [todo.md](../todo.md)), then sets it back to `[ ]` for the next playtest.
 
-## Linked PABXes, All-Call (added 2026-11-02)
+## Linked PABXes, All-Call, SSB mix (added 2026-11-02)
 
 GameTests cover the calling logic and unit tests the levels; these need a client.
 
@@ -18,6 +18,19 @@ GameTests cover the calling logic and unit tests the levels; these need a client
   them clashing extensions before linking: "EXT IN USE" flashes in the top right of both phones' LCDs and on the PABX
   screens, and dialing that number flashes it on the caller's bottom line. Changing one phone clears it within 2 s.
 - [ ] All-Call: every phone rings; the first to answer talks and the others show ANSWERED ELSEWHERE.
+- [ ] SSB, a manpack keyed beside a 20m radio with a commercial module on the same frequency 20 blocks off: on the
+  radio your voice is a little over the module, both are clear, and the second keying up does not jump, crackle or
+  drop out. `SSB_MIX_POWER`, `SSB_MIX_FLOOR`, `MIX_AGC_*` in `VoiceMix`, `NEAR_BLOCKS` in `ReceiverMix`.
+- [ ] SSB, two voices at once: the weaker lifts in the stronger's pauses without pumping unpleasantly, and the small
+  pitch offset (10 to 40 Hz, only while mixed) helps tell them apart without sounding detuned when it starts.
+- [ ] SSB, a transmitter 1 to 3 blocks from the receiver: only faintly rough, never harsh (`OVERLOAD_SPLATTER`).
+- [ ] Desense: two radios with antennas within 5 blocks, one transmitting: the other hears a far station weaker (FM:
+  hiss or dropouts), less so with more distance or frequency separation, not at all from 2 MHz apart
+  (`desense_range`, `desense_separation_mhz`, `desense_depth`).
+- [ ] HF skip voice sounds hollow and slowly watery; local voice stays clean (`skip_multipath_depth`, default 0.6).
+- [ ] SSB, a weak station on a noisy band: the voice stays near full volume with the static plainly louder around it,
+  rather than the voice going quiet (`VOICE_LEVEL_POWER` in `ReceiverMix`). The static does not flutter while a
+  strong and a weak station talk together.
 
 
 ## PABX rework (added 2026-10-31)

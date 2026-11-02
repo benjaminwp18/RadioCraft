@@ -100,6 +100,7 @@ public class BareConnectorAntenna implements IAntenna {
 			if(strength <= 0.0D)
 				continue;
 			AntennaVoicePacket packet = new AntennaVoicePacket(level, rawAudio.clone(), band, frequencyHertz, strength, this, sourcePlayer, ctcssTone);
+			packet.setDestination(other);
 			other.receiveAudioPacket(packet);
 		}
 	}
@@ -134,8 +135,11 @@ public class BareConnectorAntenna implements IAntenna {
 		com.arrl.radiocraft.common.radio.TransmitterLog.record(this, pos, band, frequencyHertz); // On the air: direction finders can hear it.
 		for(IAntenna other : others()) {
 			double strength = strengthAt(distanceTo(other));
-			if(strength > 0.0D)
-				other.receiveDataPacket(new AntennaDataPacket(level, payload, band, frequencyHertz, strength, this));
+			if(strength > 0.0D) {
+				AntennaDataPacket packet = new AntennaDataPacket(level, payload, band, frequencyHertz, strength, this);
+				packet.setDestination(other);
+				other.receiveDataPacket(packet);
+			}
 		}
 	}
 

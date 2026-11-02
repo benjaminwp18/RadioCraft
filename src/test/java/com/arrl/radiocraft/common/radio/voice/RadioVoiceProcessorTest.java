@@ -81,10 +81,10 @@ class RadioVoiceProcessorTest {
 	void voiceLevelFollowsSignalToNoise() {
 		assertEquals(0.0D, ReceiverMix.voiceLevel(0.0D, 0.3D));
 		assertTrue(ReceiverMix.voiceLevel(0.97D, 0.2D) > 0.95D);
-		assertTrue(ReceiverMix.voiceLevel(0.1D, 1.0D) < 0.12D);
+		assertEquals(0.5D, ReceiverMix.voiceLevel(0.1D, 1.0D), 0.01D, "a tenth of the noise is still heard, under the static");
+		assertTrue(ReceiverMix.voiceLevel(0.3D, 0.3D) > 0.85D, "at the noise a voice has lost little level");
 		assertTrue(ReceiverMix.voiceLevel(0.5D, 0.3D) < ReceiverMix.voiceLevel(0.9D, 0.3D));
-		double s = 0.6D, n = 0.4D; // AGC keeps signal plus noise power at full scale.
-		assertEquals(1.0D, Math.pow(ReceiverMix.voiceLevel(s, n), 2) + Math.pow(ReceiverMix.noiseDuck(s, n), 2), 1e-9);
+		assertTrue(ReceiverMix.noiseDuck(0.1D, 0.3D) > 2.0D * ReceiverMix.noiseDuck(0.9D, 0.3D), "a weak signal cuts the noise less");
 	}
 
 	@Test

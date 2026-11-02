@@ -10,11 +10,18 @@ public final class ReceiverMix {
 
 	private ReceiverMix() {}
 
-	/** Output level of the wanted signal: about 1 when it is well above the noise, its share of the total when not. */
+	/** How much of a weak signal's loss of level is heard: the share of signal in the total, to this power. */
+	static final double VOICE_LEVEL_POWER = 0.3D;
+
+	/**
+	 * Output level of the wanted signal: about 1 when it is well above the noise. A weak voice mostly stays up and the
+	 * static stays with it ({@link #noiseDuck}), as an AGC holds the speaker steady (maintainer, 2026-11-02): level 0.9 at
+	 * the noise, 0.5 at a tenth of it, sinking away only when it is buried.
+	 */
 	public static double voiceLevel(double signal, double noise) {
 		if(signal <= 0.0D)
 			return 0.0D;
-		return signal / Math.sqrt(signal * signal + noise * noise);
+		return Math.pow(signal / Math.sqrt(signal * signal + noise * noise), VOICE_LEVEL_POWER);
 	}
 
 	/**
@@ -27,6 +34,37 @@ public final class ReceiverMix {
 		if(noise <= 0.0D)
 			return 0.0D;
 		return noise / Math.sqrt(signal * signal + noise * noise);
+	}
+
+	/** Blocks at which a station counts half as near in a mix ({@link #nearness}). */
+	static final double NEAR_BLOCKS = 16.0D;
+	/** Blocks within which a transmitter starts to overload a receiver's front end, and the splatter it reaches. */
+	static final double OVERLOAD_BLOCKS = 4.0D;
+	static final double OVERLOAD_SPLATTER = 0.05D;
+
+	/**
+	 * How much nearer a station is, 1 close by and falling with distance, for weighting it in a mix only. Propagation
+	 * falls in a straight line over a band's whole range, so 1 and 20 blocks come out nearly equal and an antenna's gain
+	 * outweighs them; a real signal 20 blocks off is far below one beside you (maintainer, 2026-11-02).
+	 */
+	public static double nearness(double blocks) {
+		return 1.0D / (1.0D + Math.max(0.0D, blocks) / NEAR_BLOCKS);
+	}
+
+	/** A little roughness on a transmitter just beside the receiver: splatter, 0 from {@link #OVERLOAD_BLOCKS} out. */
+	public static double overload(double blocks) {
+		return OVERLOAD_SPLATTER * Math.max(0.0D, 1.0D - blocks / OVERLOAD_BLOCKS);
+	}
+
+	/**
+	 * Share of a received signal left with a transmitter {@code blocks} from the antenna, {@code offsetHz} away: a nearby
+	 * transmitter overloads a receiver's front end even off frequency (maintainer, 2026-11-02). 1 from {@code range}
+	 * blocks or {@code separationHz} out, scaling down to {@code 1 - depth} right beside it on frequency.
+	 */
+	public static double desense(double blocks, double offsetHz, double range, double separationHz, double depth) {
+		double near = range <= 0.0D ? 0.0D : Math.max(0.0D, 1.0D - blocks / range);
+		double close = Math.max(0.0D, 1.0D - Math.abs(offsetHz) / separationHz);
+		return 1.0D - depth * near * close;
 	}
 
 	/** Signal strength from which an FM receiver is fully quiet (full quieting): no hiss under the voice. */

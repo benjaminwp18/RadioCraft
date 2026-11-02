@@ -30,6 +30,29 @@ class ReceiverMixTest {
     }
 
     @Test
+    void aWhipBesideYouBeatsAFullAntenna20BlocksOff() {
+        double whip = 0.5D * 0.997D * ReceiverMix.nearness(1.0D), module = 0.933D * ReceiverMix.nearness(20.0D);
+        assertTrue(whip > module, "the manpack beside the radio " + whip + " against the module " + module);
+    }
+
+    @Test
+    void desenseScalesWithDistanceAndSeparation() {
+        assertEquals(0.25D, ReceiverMix.desense(0.0D, 0.0D, 5.0D, 2e6D, 0.75D), 1e-9, "beside it, on frequency");
+        assertEquals(1.0D, ReceiverMix.desense(5.0D, 0.0D, 5.0D, 2e6D, 0.75D), 1e-9, "at the range");
+        assertEquals(1.0D, ReceiverMix.desense(1.0D, 2e6D, 5.0D, 2e6D, 0.75D), 1e-9, "2 MHz off");
+        double near = ReceiverMix.desense(1.0D, 500e3D, 5.0D, 2e6D, 0.75D), far = ReceiverMix.desense(1.0D, 1500e3D, 5.0D, 2e6D, 0.75D);
+        assertTrue(near < far && far < 1.0D, near + " then " + far);
+        assertEquals(near, ReceiverMix.desense(1.0D, -500e3D, 5.0D, 2e6D, 0.75D), 1e-9, "above or below alike");
+    }
+
+    @Test
+    void onlyATransmitterRightBesideItOverloads() {
+        assertTrue(ReceiverMix.overload(1.0D) > 0.0D && ReceiverMix.overload(1.0D) <= ReceiverMix.OVERLOAD_SPLATTER);
+        assertEquals(0.0D, ReceiverMix.overload(4.0D), 1e-9);
+        assertEquals(0.0D, ReceiverMix.overload(20.0D), 1e-9);
+    }
+
+    @Test
     void ssbStaticDucksUnderAStrongSignal() {
         assertEquals(1.0D, ReceiverMix.noiseDuck(0.0D, 0.3D), 1e-9);
         assertTrue(ReceiverMix.noiseDuck(0.9D, 0.3D) < 0.4D);

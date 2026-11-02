@@ -136,6 +136,14 @@ public class BEVoiceReceiver implements IVoiceReceiver {
 	 * {@code level} and fades into static instead ({@link RadioVoiceProcessor#fmFade}).
 	 */
 	public void receive(AntennaVoicePacket antennaPacket, double level, double rasp, double pitchShiftHz, double splatter, double qrm, double fmSignal) {
+		receive(antennaPacket, level, rasp, pitchShiftHz, splatter, qrm, fmSignal, antennaPacket.getStrength(), 0.0D);
+	}
+
+	/**
+	 * As above, with how strong it counts in a mix ({@link VoiceMix.Signal#onAir}) and how strong its late sky path gets
+	 * ({@link VoiceMix.Signal#multipath}).
+	 */
+	public void receive(AntennaVoicePacket antennaPacket, double level, double rasp, double pitchShiftHz, double splatter, double qrm, double fmSignal, double onAir, double multipath) {
 		if(!isReceiving)
 			return;
 		if(RadiocraftVoicePlugin.API == null) {
@@ -147,7 +155,7 @@ public class BEVoiceReceiver implements IVoiceReceiver {
 		}
 
 		play(antennaPacket.getLevel(), new VoiceMix.Signal(VoiceMix.key(antennaPacket.getSourcePlayer(), antennaPacket.getSource()),
-				antennaPacket.getSourcePlayer(), antennaPacket.getRawAudio(), level, rasp, pitchShiftHz, splatter, qrm, fmSignal));
+				antennaPacket.getSourcePlayer(), antennaPacket.getRawAudio(), level, rasp, pitchShiftHz, splatter, qrm, fmSignal, onAir, multipath));
 	}
 
 	/**

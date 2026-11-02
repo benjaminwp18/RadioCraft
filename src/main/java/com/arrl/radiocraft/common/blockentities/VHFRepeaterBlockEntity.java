@@ -308,6 +308,12 @@ public class VHFRepeaterBlockEntity extends VHFRadioBlockEntity {
 
 	// -------------------- REPEATING --------------------
 
+	/** Its duplexer's cavities keep transmitters off its input; what leaks through its own is worked out in {@link #receiveVoice}. */
+	@Override
+	protected double desense(com.arrl.radiocraft.api.antenna.IAntennaPacket packet) {
+		return 1.0D;
+	}
+
 	/** A signal on the input with the right tone is repeated on the output as it arrives. Voice chat thread. */
 	@Override
 	public boolean receiveVoice(AntennaVoicePacket packet) {

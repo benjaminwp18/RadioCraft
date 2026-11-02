@@ -95,8 +95,72 @@ class VoiceMixTest {
 		short[] out = null;
 		for(int f = 0; f < 10; f++)
 			out = renderer.render(List.of(ssb(A, tone(1000, 0.3, f), 1.0), ssb(B, tone(600, 0.3, f), 0.5)), CLEAN, 1.0, f * 20 * MS).pcm();
-		assertEquals(0.3, amplitudeOf(out, 1000, 9), 0.02);
-		assertEquals(0.15, amplitudeOf(out, 600, 9), 0.02);
+		double[] weights = VoiceMix.ssbWeights(new double[] {1.0, 0.5});
+		assertEquals(0.3 * weights[0], amplitudeOf(out, 1000, 9), 0.02);
+		assertEquals(0.15 * weights[1], amplitudeOf(out, 600, 9), 0.02);
+	}
+
+	@Test
+	void ssbWeightsFavourTheStrongerAndKeepBothAndOneVoicesPower() {
+		// A manpack whip beside the radio against a commercial module 20 blocks off.
+		double[] close = VoiceMix.ssbWeights(new double[] {0.5D * 0.997D * ReceiverMix.nearness(1.0D), 0.933D * ReceiverMix.nearness(20.0D)});
+		assertTrue(close[0] > close[1], "the closer is louder");
+		double decibels = 20.0D * Math.log10(close[0] / close[1]);
+		assertTrue(decibels > 1.0D && decibels < 4.0D, "slightly: " + decibels + " dB");
+		assertEquals(1.0D, close[0] * close[0] + close[1] * close[1], 1e-9, "together they have one voice's power");
+
+		double[] far = VoiceMix.ssbWeights(new double[] {1.0D, 0.05D});
+		assertEquals(VoiceMix.SSB_MIX_FLOOR, far[1] / far[0], 1e-9, "a far weaker voice is still really heard");
+		double[] equal = VoiceMix.ssbWeights(new double[] {0.5D, 0.5D});
+		assertEquals(equal[0], equal[1], 1e-9);
+	}
+
+	@Test
+	void theWeakerVoiceLiftsInTheStrongersGaps() {
+		RadioVoiceProcessor.Settings shaped = new RadioVoiceProcessor.Settings(300.0D, 2700.0D, 1.6D, true);
+		VoiceMix.Renderer renderer = new VoiceMix.Renderer();
+		short[] silence = new short[FRAME];
+		for(int f = 0; f < 50; f++)
+			renderer.render(List.of(ssb(A, tone(1000, 0.3, f), 1.0), ssb(B, tone(600, 0.3, f), 1.0)), shaped, 1.0, f * 20 * MS);
+		short[] together = renderer.render(List.of(ssb(A, tone(1000, 0.3, 50), 1.0), ssb(B, tone(600, 0.3, 50), 1.0)), shaped, 1.0, 50 * 20 * MS).pcm();
+		short[] gap = null;
+		for(int f = 51; f < 90; f++) // A stops talking between words; B goes on.
+			gap = renderer.render(List.of(ssb(A, silence, 1.0), ssb(B, tone(600, 0.3, f), 1.0)), shaped, 1.0, f * 20 * MS).pcm();
+		RadioVoiceProcessor alone = new RadioVoiceProcessor();
+		short[] unlifted = null;
+		for(int f = 0; f < 90; f++)
+			unlifted = alone.process(tone(600, 0.3, f), shaped, 1.0, 0.0);
+		double weight = VoiceMix.ssbWeights(new double[] {1.0, 1.0})[1];
+		assertTrue(rms(gap) > 1.2D * rms(unlifted) * weight, "lifted to " + rms(gap) + " from " + rms(unlifted) * weight);
+		assertTrue(rms(together) > 0.0D);
+	}
+
+	@Test
+	void stationsInAMixSitApartAndStayPut() {
+		double a = VoiceMix.ssbOffsetHz(A);
+		assertEquals(a, VoiceMix.ssbOffsetHz(A));
+		assertTrue(Math.abs(a) >= VoiceMix.SSB_OFFSET_MIN_HZ && Math.abs(a) <= VoiceMix.SSB_OFFSET_MAX_HZ, "offset " + a);
+	}
+
+	@Test
+	void aLateSkyPathNotchesTheVoice() {
+		RadioVoiceProcessor.Settings shaped = new RadioVoiceProcessor.Settings(300.0D, 2700.0D, 1.0D, true);
+		RadioVoiceProcessor clean = new RadioVoiceProcessor(), sky = new RadioVoiceProcessor();
+		boolean differs = false;
+		for(int f = 0; f < 200; f++) {
+			short[] plain = clean.process(tone(1000, 0.05, f), shaped, 1.0, 0.0, 0.0, 0.0, 0.0);
+			short[] path = sky.process(tone(1000, 0.05, f), shaped, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+			if(!java.util.Arrays.equals(plain, path))
+				differs = true;
+		}
+		assertTrue(differs, "the late path changed nothing");
+	}
+
+	private static double rms(short[] pcm) {
+		double sum = 0.0D;
+		for(short sample : pcm)
+			sum += sample * sample;
+		return Math.sqrt(sum / pcm.length) / 32768.0D;
 	}
 
 	@Test

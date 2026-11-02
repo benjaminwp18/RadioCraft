@@ -67,6 +67,32 @@ public final class TransmitterLog {
 		return best;
 	}
 
+	/**
+	 * Share of a signal on {@code frequency} left at an antenna at {@code from} ({@link com.arrl.radiocraft.common.radio.voice.ReceiverMix#desense})
+	 * under the worst transmitter on the air around it this moment, leaving out {@code wanted} (the station being heard)
+	 * and {@code own} (the antenna itself).
+	 */
+	public static double desense(Level level, BlockPos from, float frequency, @Nullable Object wanted, @Nullable Object own) {
+		double range = com.arrl.radiocraft.RadiocraftServerConfig.DESENSE_RANGE.get();
+		double separationHz = com.arrl.radiocraft.RadiocraftServerConfig.DESENSE_SEPARATION_MHZ.get() * 1_000_000.0D;
+		double depth = com.arrl.radiocraft.RadiocraftServerConfig.DESENSE_DEPTH.get();
+		long now = level.getGameTime();
+		BlockPos here = com.arrl.radiocraft.compat.sable.Sublevels.world(level, from);
+		double left = 1.0D;
+		for(Map.Entry<Object, Entry> slot : ENTRIES.entrySet()) {
+			Entry entry = slot.getValue();
+			if(slot.getKey() == wanted || slot.getKey() == own || Math.abs(now - entry.gameTime()) > DESENSE_TICKS || !entry.dimension().equals(level.dimension()))
+				continue;
+			double blocks = Math.sqrt(entry.pos().distSqr(here));
+			if(blocks < range)
+				left = Math.min(left, com.arrl.radiocraft.common.radio.voice.ReceiverMix.desense(blocks, entry.frequency() - frequency, range, separationHz, depth));
+		}
+		return left;
+	}
+
+	/** How long after its last frame a transmitter still desenses its neighbours. */
+	private static final long DESENSE_TICKS = 3L;
+
 	/** Forgets everything (tests). */
 	public static void clear() {
 		ENTRIES.clear();

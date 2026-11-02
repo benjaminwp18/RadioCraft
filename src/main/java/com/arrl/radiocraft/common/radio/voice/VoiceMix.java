@@ -17,7 +17,9 @@ import java.util.UUID;
  * Two or more stations heard on one receiver at the same time. Each arrives as its own stream of 20 ms frames; a
  * receiver plays one stream, so they are lined up ({@link Aligner}) and combined into one frame ({@link Renderer}):
  * <ul>
- *     <li>SSB (and anything not FM) adds up: both voices are heard over each other, each at its own level.</li>
+ *     <li>SSB (and anything not FM) adds up: both voices are heard over each other, the stronger on air a little louder
+ *     ({@link #ssbWeights}), each a few Hz off the other ({@link #ssbOffsetHz}), under one AGC that lets the weaker come
+ *     up in the stronger's gaps.</li>
  *     <li>FM captures the stronger signal: once it is {@link #FM_CAPTURE_RATIO} times the next, only it is heard, roughened
  *     the closer the other comes. Closer than that, neither captures: the receiver flips between them in garbled bursts
  *     (doubling).</li>
@@ -37,6 +39,18 @@ public final class VoiceMix {
 	/** Garble and bleed while two FM signals double. */
 	static final double FM_DOUBLING_GARBLE = 0.5D;
 	static final double FM_DOUBLING_BLEED = 0.45D;
+	/** How sharply an SSB voice drops behind the strongest in a mix, as the power of their ratio on air. */
+	static final double SSB_MIX_POWER = 2.0D;
+	/** The least an SSB voice is weighted against the strongest (about 4.4 dB down), so both are really heard. */
+	static final double SSB_MIX_FLOOR = 0.6D;
+	/** What the shared AGC holds a mix's envelope at, as a share of the loudest station's level. */
+	static final double MIX_AGC_TARGET = 0.3D;
+	/** How far the shared AGC moves: down under two voices at once, up in the gaps. */
+	static final double MIX_AGC_MIN = 0.6D, MIX_AGC_MAX = 1.6D;
+	private static final double MIX_AGC_GATE = 0.01D;
+	private static final double MIX_AGC_ATTACK = 0.005D, MIX_AGC_RELEASE = 0.15D;
+	/** How far off zero beat a station in a mix sits, Hz either way. */
+	static final double SSB_OFFSET_MIN_HZ = 10.0D, SSB_OFFSET_MAX_HZ = 40.0D;
 
 	/**
 	 * One station's frame as the receiver heard it: the parameters of {@link RadioVoiceProcessor#process} and, for FM,
@@ -45,17 +59,55 @@ public final class VoiceMix {
 	 * @param key      Who it is: the talker and the antenna it came from (a parrot echoing you is not you).
 	 * @param source   The talking player, for the squelch tail; may be null.
 	 * @param fmSignal The signal's strength on an FM receiver, below 0 for SSB/AM.
+	 * @param onAir    How strong it counts in a mix, whatever the noise did to {@code level}: ranks and weights it.
+	 * @param multipath How strong its late sky path gets, 0 to 1.
 	 */
 	public record Signal(Object key, @Nullable UUID source, short[] pcm, double level, double rasp, double pitchShiftHz,
-						 double splatter, double qrm, double fmSignal) {
+						 double splatter, double qrm, double fmSignal, double onAir, double multipath) {
+		/** With its strength on air taken from {@code fmSignal} or, for SSB, {@code level}. */
+		public Signal(Object key, @Nullable UUID source, short[] pcm, double level, double rasp, double pitchShiftHz,
+					  double splatter, double qrm, double fmSignal) {
+			this(key, source, pcm, level, rasp, pitchShiftHz, splatter, qrm, fmSignal, fmSignal >= 0.0D ? fmSignal : level, 0.0D);
+		}
+
 		public boolean fm() {
 			return fmSignal >= 0.0D;
 		}
 
 		/** How strong it is on air, to rank it against the others. */
 		double strength() {
-			return fm() ? fmSignal : level;
+			return fm() ? fmSignal : onAir;
 		}
+	}
+
+	/**
+	 * Each SSB voice's weight in a mix, in the order of {@code strengths}: a second voice brings the first down so the sum
+	 * keeps one voice's power, and the weaker sits a little under the stronger, compressed from the real difference so
+	 * neither is lost (maintainer, 2026-11-02).
+	 */
+	static double[] ssbWeights(double[] strengths) {
+		double strongest = 0.0D;
+		for(double strength : strengths)
+			strongest = Math.max(strongest, strength);
+		double[] out = new double[strengths.length];
+		double power = 0.0D;
+		for(int i = 0; i < out.length; i++) {
+			out[i] = strongest <= 0.0D ? 1.0D : Math.max(SSB_MIX_FLOOR, Math.pow(strengths[i] / strongest, SSB_MIX_POWER));
+			power += out[i] * out[i];
+		}
+		for(int i = 0; i < out.length; i++)
+			out[i] /= Math.sqrt(power);
+		return out;
+	}
+
+	/**
+	 * How far off zero beat {@code key}'s station sits while mixed, from who it is so it stays put: real stations are
+	 * rarely on exactly one frequency, and the difference helps the ear pull two voices apart.
+	 */
+	static double ssbOffsetHz(Object key) {
+		int hash = key.hashCode() * 0x9E3779B1;
+		double offset = SSB_OFFSET_MIN_HZ + (SSB_OFFSET_MAX_HZ - SSB_OFFSET_MIN_HZ) * ((hash >>> 8 & 0xFF) / 255.0D);
+		return (hash & 0x80000000) == 0 ? offset : -offset;
 	}
 
 	/** The key for a talker heard through an antenna. */
@@ -76,8 +128,8 @@ public final class VoiceMix {
 		static final long LEAD_TIMEOUT_NANOS = 70_000_000L;
 		/** A waiting station is forgotten after this long without a frame. */
 		static final long FORGET_NANOS = 250_000_000L;
-		/** Frames kept waiting per station; older ones are dropped (60 ms of delay at most). */
-		static final int MAX_WAITING = 3;
+		/** Frames kept waiting per station; older ones are dropped (100 ms of delay at most, for a lead sending a tick's worth at once). */
+		static final int MAX_WAITING = 5;
 
 		private Object lead;
 		private long leadLast;
@@ -140,6 +192,8 @@ public final class VoiceMix {
 		private Object doublingPick;
 		private int doublingFramesLeft;
 		private long random = System.nanoTime() | 1L;
+		private double mixGain = 1.0D;
+		private double mixEnvelope = 0.0D;
 
 		/**
 		 * Mixes {@code signals} (the input frames are left alone) for a speaker with {@code settings}, at
@@ -150,19 +204,28 @@ public final class VoiceMix {
 			if(signals.size() == 1) {
 				Signal s = signals.getFirst();
 				Track track = track(s, nanos);
-				track.weight = -1.0D; // A mix that starts later starts from its full weight.
-				short[] pcm = track.processor.process(s.pcm().clone(), settings, s.level() * loudness, s.rasp(), s.pitchShiftHz(), s.splatter(), s.qrm());
+				track.weight = 1.0D; // A mix that starts later glides down from its full weight.
+				short[] pcm = track.processor.process(s.pcm().clone(), settings, s.level() * loudness, s.rasp(), s.pitchShiftHz(), s.splatter(), s.qrm(), s.multipath());
 				if(s.fm())
 					fm.fmFade(pcm, s.fmSignal(), s.level() * loudness, settings.smoothSeconds());
+				settleMixGain(pcm);
 				return new Mixed(pcm, s);
 			}
 			List<Signal> ranked = new ArrayList<>(signals);
 			ranked.sort(Comparator.comparingDouble(Signal::strength).reversed());
 			Signal strongest = ranked.getFirst();
-			if(!strongest.fm()) { // SSB: everyone is heard, each at the level its own path gives it.
+			if(!strongest.fm()) { // SSB: everyone is heard, at the level its own path gives it and its weight in the mix.
 				double[] sum = new double[strongest.pcm().length];
-				for(Signal s : ranked)
-					add(sum, s, s.splatter(), 1.0D, settings, loudness, nanos);
+				double[] weights = ssbWeights(ranked.stream().mapToDouble(Signal::strength).toArray());
+				boolean shaped = settings.enabled();
+				double loudest = 0.0D;
+				for(int i = 0; i < weights.length; i++) {
+					Signal s = ranked.get(i);
+					add(sum, s, s.pitchShiftHz() + (shaped ? ssbOffsetHz(s.key()) : 0.0D), s.splatter(), weights[i], settings, loudness, nanos);
+					loudest = Math.max(loudest, s.level() * loudness);
+				}
+				if(shaped)
+					mixAgc(sum, loudest);
 				return new Mixed(limit(sum), strongest);
 			}
 			Signal on;
@@ -182,10 +245,42 @@ public final class VoiceMix {
 			}
 			double[] sum = new double[on.pcm().length];
 			for(Signal s : ranked)
-				add(sum, s, s == on ? Math.max(s.splatter(), garble) : s.splatter(), s == on ? 1.0D : bleed, settings, loudness, nanos);
+				add(sum, s, s.pitchShiftHz(), s == on ? Math.max(s.splatter(), garble) : s.splatter(), s == on ? 1.0D : bleed, settings, loudness, nanos);
 			short[] pcm = limit(sum);
 			fm.fmFade(pcm, on.fmSignal(), on.level() * loudness, settings.smoothSeconds());
 			return new Mixed(pcm, on);
+		}
+
+		/**
+		 * The receiver's one AGC over everything it hears (each station's own processor stands in for its transmitter's
+		 * leveller): quick down when voices stack up, and back up over 150 ms, so the weaker voice lifts in the stronger's
+		 * gaps. {@code loudest} is the top station's output level.
+		 */
+		private void mixAgc(double[] sum, double loudest) {
+			double attack = RadioVoiceProcessor.coefficient(MIX_AGC_ATTACK), release = RadioVoiceProcessor.coefficient(MIX_AGC_RELEASE);
+			for(int i = 0; i < sum.length; i++) {
+				double magnitude = Math.abs(sum[i]);
+				mixEnvelope = magnitude > mixEnvelope ? attack * mixEnvelope + (1.0D - attack) * magnitude : release * mixEnvelope + (1.0D - release) * magnitude;
+				double wanted = mixEnvelope > MIX_AGC_GATE * loudest
+						? Math.max(MIX_AGC_MIN, Math.min(MIX_AGC_MAX, MIX_AGC_TARGET * loudest / mixEnvelope))
+						: mixGain; // Holds through silence, as each station's does.
+				mixGain = wanted < mixGain ? attack * mixGain + (1.0D - attack) * wanted : release * mixGain + (1.0D - release) * wanted;
+				sum[i] *= mixGain;
+			}
+		}
+
+		/** One station again: the shared AGC's gain glides back to 1, so its last value is not a step. */
+		private void settleMixGain(short[] pcm) {
+			if(mixGain == 1.0D)
+				return;
+			double glide = RadioVoiceProcessor.coefficient(0.02D);
+			for(int i = 0; i < pcm.length; i++) {
+				mixGain = glide * mixGain + (1.0D - glide);
+				pcm[i] = (short)Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, Math.round(pcm[i] * mixGain)));
+			}
+			if(Math.abs(mixGain - 1.0D) < 1e-3D)
+				mixGain = 1.0D;
+			mixEnvelope = 0.0D;
 		}
 
 		/** Who an FM receiver locks onto in doubling, for a few frames at a time: more often the stronger. */
@@ -221,9 +316,9 @@ public final class VoiceMix {
 		}
 
 		/** Processes one station's frame and adds it into {@code sum} at {@code weight}, which glides over 5 ms. */
-		private void add(double[] sum, Signal s, double splatter, double weight, RadioVoiceProcessor.Settings settings, double loudness, long nanos) {
+		private void add(double[] sum, Signal s, double pitchShiftHz, double splatter, double weight, RadioVoiceProcessor.Settings settings, double loudness, long nanos) {
 			Track track = track(s, nanos);
-			short[] pcm = track.processor.process(s.pcm().clone(), settings, s.level() * loudness, s.rasp(), s.pitchShiftHz(), splatter, s.qrm());
+			short[] pcm = track.processor.process(s.pcm().clone(), settings, s.level() * loudness, s.rasp(), pitchShiftHz, splatter, s.qrm(), s.multipath());
 			if(track.weight < 0.0D)
 				track.weight = weight;
 			double glide = RadioVoiceProcessor.coefficient(0.005D);

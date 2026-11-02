@@ -176,6 +176,8 @@ public class ManpackRadio implements IAntenna {
 		}
 	}
 
+	private volatile long lastSignalPeakNanos = 0L;
+
 	// -------------------- THE NOISE --------------------
 
 	/** HF noise where it stands: the solar noise floor, plus any aurora overhead. */
@@ -270,12 +272,19 @@ public class ManpackRadio implements IAntenna {
 		Detuning.Effect effect = Detuning.ssb(current.frequency(), packet.getFrequency(), current.frequency() < 10_000_000.0F);
 		if(!effect.audible())
 			return;
-		double strength = ManpackWhipAntennaType.INSTANCE.getReceiveEfficiency(packet, new EmptyAntennaData(), here.position()) * effect.strength();
+		double strength = ManpackWhipAntennaType.INSTANCE.getReceiveEfficiency(packet, new EmptyAntennaData(), here.position()) * effect.strength()
+				* TransmitterLog.desense(here.level(), here.position(), packet.getFrequency(), packet.getSource(), this);
 		if(strength <= 0.0D)
 			return;
-		lastSignal = strength;
-		lastSignalNanos = System.nanoTime();
+		long heard = System.nanoTime();
+		if(strength >= lastSignal || heard - lastSignalPeakNanos > 100_000_000L) { // The strongest sets the AGC, not the latest frame.
+			lastSignal = strength;
+			lastSignalPeakNanos = heard;
+		}
+		lastSignalNanos = heard;
 		double level = ReceiverMix.voiceLevel(strength, noiseFloor(here.level(), here.position())) * current.gain();
+		double blocks = Math.sqrt(com.arrl.radiocraft.compat.sable.Sublevels.distSqr(here.level(), packet.getSource().getAntennaPos().position(), here.position()));
+		double multipath = packet.getBand() != null && blocks > packet.getBand().losRange() ? RadiocraftServerConfig.SKIP_MULTIPATH_DEPTH.get() : 0.0D;
 		synchronized(this) {
 			if(channel == null) {
 				channel = RadiocraftVoicePlugin.API.createLocationalAudioChannel(UUID.randomUUID(), RadiocraftVoicePlugin.API.fromServerLevel(packet.getLevel()),
@@ -288,7 +297,7 @@ public class ManpackRadio implements IAntenna {
 			long now = System.nanoTime();
 			List<com.arrl.radiocraft.common.radio.voice.VoiceMix.Signal> slot = aligner.offer(new com.arrl.radiocraft.common.radio.voice.VoiceMix.Signal(
 					com.arrl.radiocraft.common.radio.voice.VoiceMix.key(packet.getSourcePlayer(), packet.getSource()), packet.getSourcePlayer(),
-					packet.getRawAudio(), level, 0.0D, effect.pitchShiftHz(), effect.splatter(), 0.0D, -1.0D), now);
+					packet.getRawAudio(), level, 0.0D, effect.pitchShiftHz(), Math.max(effect.splatter(), ReceiverMix.overload(blocks)), 0.0D, -1.0D, strength * ReceiverMix.nearness(blocks), multipath), now);
 			if(slot.isEmpty())
 				return; // Another station leads: this frame goes out mixed with its next one.
 			short[] audio = renderer.render(slot, SpeakerKind.BUILT_IN.apply(RadioVoiceProcessor.currentSettings()), 1.0D, now).pcm();
