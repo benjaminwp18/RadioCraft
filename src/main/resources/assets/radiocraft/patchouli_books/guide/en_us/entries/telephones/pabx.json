@@ -6,7 +6,7 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "A $(item)Phone PABX$() is the exchange every $(l:radiocraft:telephones/telephone)telephone$(/l) needs. Phones touching it or on its $(l:radiocraft:radios/data_wire)data wire$(/l) call each other by extension. It needs power from the power wire; its lamp is green while it has it.$(br2)Right click it to set it up: fill in the boxes and press Save."
+      "text": "A $(item)Phone PABX$() is the exchange every $(l:radiocraft:telephones/telephone)telephone$(/l) needs. Phones touching it or on its $(l:radiocraft:radios/data_wire)data wire$(/l) call each other by extension. It needs power from the power wire, and its phones draw through it, so a big system needs a stronger supply; its lamp is green while it has power.$(br2)Right click it to set it up: fill in the boxes and press Save."
     },
     {
       "type": "patchouli:text",

@@ -181,6 +181,7 @@ public class RadiocraftBlocks {
 	public static final DeferredHolder<Block, DirectionFinderBlock> DIRECTION_FINDER = BLOCKS.register("direction_finder", () -> new DirectionFinderBlock(PROPERTIES_RADIO, false));
 	public static final DeferredHolder<Block, DirectionFinderBlock> MAP_DIRECTION_FINDER = BLOCKS.register("map_direction_finder", () -> new DirectionFinderBlock(PROPERTIES_RADIO, true));
 	public static final DeferredHolder<Block, com.arrl.radiocraft.common.blocks.PabxBlock> PABX = BLOCKS.register("pabx", () -> new com.arrl.radiocraft.common.blocks.PabxBlock(PROPERTIES_RADIO));
+	public static final DeferredHolder<Block, com.arrl.radiocraft.common.blocks.PhonePaBlock> PHONE_PA = BLOCKS.register("phone_pa", () -> new com.arrl.radiocraft.common.blocks.PhonePaBlock(PROPERTIES_RADIO));
 	public static final DeferredHolder<Block, DirectionFinderModuleBlock> DIRECTION_FINDER_MODULE = BLOCKS.register("direction_finder_module", () -> new DirectionFinderModuleBlock(PROPERTIES_RADIO));
 
 	// Microwave links and what rides them.

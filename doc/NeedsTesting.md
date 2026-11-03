@@ -8,6 +8,20 @@ writes back here: `- [ ]` not tested, `- [x]` passed, `- [!]` needs work, with `
 `![caption](testing_shots/...)` screenshots indented under the item. Whoever picks up a `[!]` item fixes it (or moves
 it to [todo.md](../todo.md)), then sets it back to `[ ]` for the next playtest.
 
+## Phone PA (added 2026-11-02)
+
+GameTests cover answering, numbering, local calls and finding speakers. These need a client.
+
+- [ ] Looks like a PABX but blue grey with a grille on the front; its lamp lights during a call.
+- [ ] Right click it: plain panel with Extension, Speakers connected, a working "Allow within local PABX only" checkbox
+  with readable text, Save, and a status line that fits. With JEI installed its list sits beside the panel and covers
+  nothing.
+- [ ] Call it and talk: your voice comes out of a desk speaker touching it, and desk, wall and PA speakers on its data
+  wire, each sounding like that speaker (the horn loud and far). Data wire visibly connects to desk and premium speakers.
+- [ ] A PABX with many phones on a battery runs it down faster, and with too little supply every phone loses its line.
+- [ ] Manpack, weak local signal in a solar event: as clear as a radio in the same spot (it used full solar noise before).
+
+
 ## Linked PABXes, All-Call, SSB mix (added 2026-11-02)
 
 GameTests cover the calling logic and unit tests the levels; these need a client.
@@ -31,6 +45,11 @@ GameTests cover the calling logic and unit tests the levels; these need a client
 - [ ] SSB, a weak station on a noisy band: the voice stays near full volume with the static plainly louder around it,
   rather than the voice going quiet (`VOICE_LEVEL_POWER` in `ReceiverMix`). The static does not flutter while a
   strong and a weak station talk together.
+- [ ] RF through a roof: a handheld or an antenna under wood planks, stairs or slabs, glass, wool or leaves works as well as
+  outside; under stone or logs it is weaker as before. The atlas re-reads a chunk in turn, or at once with a reload.
+- [ ] SSB static under a signal: none at S3 or better on a great, good or average band, including a manpack a few
+  blocks from a 5B on 20m. On fair, poor and blackout the signal must beat the noise floor's meter reading to clear it.
+  Below that the static comes back gently, then faster (`noiseDuck`, `QUIET_SIGNAL` in `ReceiverMix`).
 
 
 ## PABX rework (added 2026-10-31)

@@ -49,6 +49,13 @@ class PabxNumbersTest {
     }
 
     @Test
+    void twentyPhonesMatchAnHfReceiver() {
+        assertEquals(8.0D, PabxNumbers.phoneLoad(20, 0, 0.4D, 3.0D), 1e-9);
+        assertEquals(1.2D, PabxNumbers.phoneLoad(1, 1, 0.4D, 3.0D), 1e-9, "a PA on a call draws triple");
+        assertEquals(2.0D, PabxNumbers.phoneLoad(3, 1, 0.4D, 3.0D), 1e-9, "two phones and a PA on a call");
+    }
+
+    @Test
     void namesAreCleanedAndCut() {
         assertEquals("OFFICE", PabxNumbers.cleanName("office"));
         assertEquals("NORTH-1", PabxNumbers.cleanName(" north-1 "));

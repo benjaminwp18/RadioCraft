@@ -2,6 +2,7 @@ package com.arrl.radiocraft.gametest;
 
 import com.arrl.radiocraft.Radiocraft;
 import com.arrl.radiocraft.RadiocraftServerConfig;
+import com.arrl.radiocraft.common.be_networks.network_objects.BatteryNetworkObject;
 import com.arrl.radiocraft.common.blockentities.MicrowaveRadioBlockEntity;
 import com.arrl.radiocraft.common.blockentities.PabxBlockEntity;
 import com.arrl.radiocraft.common.blockentities.TelephoneBlockEntity;
@@ -354,11 +355,54 @@ public class PabxGameTests {
 	@BeforeBatch(batch = UNPOWERED)
 	public static void powerRequired(ServerLevel level) {
 		RadiocraftServerConfig.RADIO_POWER_REQUIRED.set(true);
+		RadiocraftServerConfig.PHONE_POWER_USE.set(0.4D); // A run folder's saved config may hold an older default.
 	}
 
 	@AfterBatch(batch = UNPOWERED)
 	public static void powerFree(ServerLevel level) {
 		RadiocraftServerConfig.RADIO_POWER_REQUIRED.set(false);
+	}
+
+	/**
+	 * Five phones draw through the PABX: 2 of its own and 2 for them, from the battery on its wire, and a PA on a call
+	 * draws triple a phone. With too little coming in, its phones have no line.
+	 */
+	@GameTest(template = GameTestUtil.EMPTY, timeoutTicks = 300, batch = UNPOWERED)
+	public static void phonesDrawThroughThePabx(GameTestHelper helper) {
+		BlockPos battery = PABX.east(2), pa = PABX.below();
+		helper.setBlock(PABX, RadiocraftBlocks.PABX.get());
+		helper.setBlock(PABX.north(), RadiocraftBlocks.TELEPHONE.get());
+		helper.setBlock(PABX.south(), RadiocraftBlocks.TELEPHONE.get());
+		helper.setBlock(PABX.west(), RadiocraftBlocks.TELEPHONE.get());
+		helper.setBlock(PABX.above(), RadiocraftBlocks.TELEPHONE.get());
+		helper.setBlock(pa, RadiocraftBlocks.PHONE_PA.get());
+		GameTestUtil.placeWire(helper, PABX.east(), RadiocraftBlocks.WIRE.get());
+		helper.setBlock(battery, RadiocraftBlocks.LARGE_BATTERY.get());
+		BatteryNetworkObject[] store = new BatteryNetworkObject[1];
+		int[] before = new int[1];
+		helper.startSequence()
+				.thenIdle(2)
+				.thenExecute(() -> {
+					store[0] = GameTestUtil.networkObject(helper, battery, BatteryNetworkObject.class);
+					store[0].getStorage().setEnergy(100_000);
+				})
+				.thenWaitUntil(() -> helper.assertTrue(pabx(helper, PABX).isPowered() && Math.abs(pabx(helper, PABX).getPhoneLoad() - 2.0D) < 1e-6, "load " + pabx(helper, PABX).getPhoneLoad()))
+				.thenExecute(() -> before[0] = store[0].getStorage().getEnergyStored())
+				.thenIdle(40)
+				.thenExecute(() -> {
+					int used = before[0] - store[0].getStorage().getEnergyStored();
+					helper.assertTrue(used >= 150 && used <= 170, "used " + used + " in 40 ticks, expected about 160");
+					phone(helper, PABX.north()).setExtension(800);
+					GameTestUtil.blockEntity(helper, pa, com.arrl.radiocraft.common.blockentities.PhonePaBlockEntity.class).save("900", false);
+					phone(helper, PABX.north()).dial("900");
+				})
+				.thenWaitUntil(() -> helper.assertTrue(Math.abs(pabx(helper, PABX).getPhoneLoad() - 2.8D) < 1e-6, "load on a call " + pabx(helper, PABX).getPhoneLoad()))
+				.thenExecute(() -> {
+					phone(helper, PABX.north()).hangUp();
+					store[0].getStorage().setEnergy(0);
+				})
+				.thenWaitUntil(() -> helper.assertFalse(pabx(helper, PABX).isPowered(), "still up with an empty battery"))
+				.thenSucceed();
 	}
 
 	/** A PABX with no power wire is no exchange: no line, lamp dark. */

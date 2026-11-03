@@ -165,7 +165,7 @@ public class ManpackRadio implements IAntenna {
 			stack.set(RadiocraftDataComponent.MANPACK_STATE.get(), current);
 		state = current;
 		antennaPos.set(new AntennaPos(player.blockPosition(), player.level()));
-		indoors = !player.level().canSeeSky(BlockPos.containing(player.getEyePosition()));
+		indoors = com.arrl.radiocraft.common.radio.terrain.TerrainPropagation.isIndoors(player.level(), BlockPos.containing(player.getEyePosition()));
 
 		float signal = System.nanoTime() - lastSignalNanos < 300_000_000L ? (float)lastSignal : 0.0F;
 		signal = Math.round(signal * 20.0F) / 20.0F;
@@ -180,10 +180,13 @@ public class ManpackRadio implements IAntenna {
 
 	// -------------------- THE NOISE --------------------
 
-	/** HF noise where it stands: the solar noise floor, plus any aurora overhead. */
-	private double noiseFloor(Level level, BlockPos pos) {
+	/**
+	 * HF noise where it stands: the solar noise floor, plus any aurora overhead. A local signal is copied against only
+	 * part of the solar noise ({@code los_solar_noise_share}), as on a radio.
+	 */
+	private double noiseFloor(Level level, BlockPos pos, boolean skip) {
 		SolarEvent.SolarEventInstance event = SolarEventManager.getEvent(level);
-		double noise = event == null ? 0.0D : event.getEvent().getNoise();
+		double noise = (event == null ? 0.0D : event.getEvent().getNoise()) * (skip ? 1.0D : RadiocraftServerConfig.LOS_SOLAR_NOISE_SHARE.get());
 		if(Aurora.affects(level, pos))
 			noise += RadiocraftServerConfig.AURORA_STATIC.get();
 		return Math.min(1.0D, noise);
@@ -282,9 +285,10 @@ public class ManpackRadio implements IAntenna {
 			lastSignalPeakNanos = heard;
 		}
 		lastSignalNanos = heard;
-		double level = ReceiverMix.voiceLevel(strength, noiseFloor(here.level(), here.position())) * current.gain();
 		double blocks = Math.sqrt(com.arrl.radiocraft.compat.sable.Sublevels.distSqr(here.level(), packet.getSource().getAntennaPos().position(), here.position()));
-		double multipath = packet.getBand() != null && blocks > packet.getBand().losRange() ? RadiocraftServerConfig.SKIP_MULTIPATH_DEPTH.get() : 0.0D;
+		boolean skip = packet.getBand() != null && blocks > packet.getBand().losRange();
+		double multipath = skip ? RadiocraftServerConfig.SKIP_MULTIPATH_DEPTH.get() : 0.0D;
+		double level = ReceiverMix.voiceLevel(strength, noiseFloor(here.level(), here.position(), skip)) * current.gain();
 		synchronized(this) {
 			if(channel == null) {
 				channel = RadiocraftVoicePlugin.API.createLocationalAudioChannel(UUID.randomUUID(), RadiocraftVoicePlugin.API.fromServerLevel(packet.getLevel()),

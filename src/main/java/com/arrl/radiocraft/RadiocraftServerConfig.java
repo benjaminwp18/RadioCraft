@@ -86,6 +86,8 @@ public class RadiocraftServerConfig {
 	public static final ModConfigSpec.ConfigValue<Integer> APRS_TERMINAL_POWER_USE;
 	public static final ModConfigSpec.ConfigValue<Integer> PABX_POWER_USE;
 	public static final ModConfigSpec.ConfigValue<Integer> PABX_MASTER_DIGITS;
+	public static final ModConfigSpec.ConfigValue<Double> PHONE_POWER_USE;
+	public static final ModConfigSpec.ConfigValue<Double> PHONE_PA_CALL_MULTIPLIER;
 	public static final ModConfigSpec.ConfigValue<Integer> APRS_MESSAGE_RETRIES;
 	public static final ModConfigSpec.ConfigValue<Boolean> APRS_BEACON_DEFAULT;
 	public static final ModConfigSpec.ConfigValue<Boolean> APRS_DIGIPEAT_DEFAULT;
@@ -329,6 +331,8 @@ public class RadiocraftServerConfig {
 		FAX_PACKET_RETRIES = BUILDER.comment(" Times one fax packet is sent again without an ack before the fax fails").defineInRange("fax_packet_retries", 15, 0, 100);
 		APRS_TERMINAL_POWER_USE = BUILDER.comment(" Power the H19 terminal draws per tick from a power wire run to it; without one it runs off its station when it touches it (the radio interface beside a powered radio)").defineInRange("aprs_terminal_power_use", 3, 0, 10000);
 		PABX_POWER_USE = BUILDER.comment(" Power a phone PABX draws per tick, always: no calls through it without (radios_need_power = false runs it free)").defineInRange("pabx_power_use", 2, 0, 10000);
+		PHONE_POWER_USE = BUILDER.comment(" Power each phone or Phone PA draws per tick, through its PABX and on top of the PABX's own: 20 phones match an HF receiver").defineInRange("phone_power_use", 0.4, 0.0, 1000.0);
+		PHONE_PA_CALL_MULTIPLIER = BUILDER.comment(" How many times a phone's power a Phone PA draws while a call plays through it").defineInRange("phone_pa_call_multiplier", 3.0, 0.0, 1000.0);
 		PABX_MASTER_DIGITS = BUILDER.comment(" Digits in a phone PABX's master number (dialed before an extension to reach it from another PABX); a PABX may also have none")
 				.defineInRange("pabx_master_digits", 3, 1, 6);
 		APRS_MESSAGE_RETRY_SECONDS = BUILDER.comment(" Seconds an APRS message waits for its ack before it is sent again")

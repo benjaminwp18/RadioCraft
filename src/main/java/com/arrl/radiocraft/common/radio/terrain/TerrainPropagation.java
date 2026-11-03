@@ -127,6 +127,20 @@ public final class TerrainPropagation {
         return TerrainMath.dbToFactor(db);
     }
 
+    /** True if a block RF does not pass through is over {@code pos}: a roof of wood, glass, wool or leaves does not count. Server thread. */
+    public static boolean isIndoors(Level level, BlockPos pos) {
+        if(level.canSeeSky(pos))
+            return false;
+        int top = level.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE, pos.getX(), pos.getZ());
+        BlockPos.MutableBlockPos above = pos.mutable();
+        for(int y = pos.getY(); y < top; y++) {
+            net.minecraft.world.level.block.state.BlockState state = level.getBlockState(above.setY(y));
+            if(!state.is(com.arrl.radiocraft.common.init.RadiocraftTags.Blocks.RF_TRANSPARENT) && state.getLightBlock(level, above) > 0)
+                return true;
+        }
+        return false;
+    }
+
     /** Terrain loss in dB on the line-of-sight path, kept for a while per pair of cells. */
     public static double pathLossDb(Level level, TerrainAtlas atlas, Band band, BlockPos from, BlockPos to) {
         return pathLossDb(level, atlas, band, from, to, false);

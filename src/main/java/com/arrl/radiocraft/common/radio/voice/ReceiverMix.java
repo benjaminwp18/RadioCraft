@@ -26,15 +26,18 @@ public final class ReceiverMix {
 
 	/**
 	 * Factor the background static is multiplied by: 1 with no signal (the static plays at the noise floor, as always),
-	 * falling toward 0 as the signal rises above the noise.
+	 * 0 from {@link #QUIET_SIGNAL} up, or from the noise floor up if that is higher, so a noisy band stays noisy under
+	 * all but a stronger signal. Below that the static comes back slowly at first (maintainer, 2026-11-02).
 	 */
 	public static double noiseDuck(double signal, double noise) {
 		if(signal <= 0.0D)
 			return 1.0D;
-		if(noise <= 0.0D)
-			return 0.0D;
-		return noise / Math.sqrt(signal * signal + noise * noise);
+		double share = signal / Math.max(QUIET_SIGNAL, noise);
+		return share >= 1.0D ? 0.0D : 1.0D - share * share;
 	}
+
+	/** The signal that clears the static off a quiet band: where the S-meter starts to read S3. */
+	static final double QUIET_SIGNAL = 2.5D / 9.0D;
 
 	/** Blocks at which a station counts half as near in a mix ({@link #nearness}). */
 	static final double NEAR_BLOCKS = 16.0D;

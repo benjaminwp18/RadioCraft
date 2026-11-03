@@ -57,4 +57,13 @@ class ReceiverMixTest {
         assertEquals(1.0D, ReceiverMix.noiseDuck(0.0D, 0.3D), 1e-9);
         assertTrue(ReceiverMix.noiseDuck(0.9D, 0.3D) < 0.4D);
     }
+
+    @Test
+    void s3ClearsTheStaticUnlessTheNoiseIsHigher() {
+        assertEquals(0.0D, ReceiverMix.noiseDuck(ReceiverMix.QUIET_SIGNAL, 0.1D), 1e-9, "S3 on a quiet band");
+        assertEquals(0.0D, ReceiverMix.noiseDuck(0.3D, 0.3D), 1e-9, "at the noise on an average band");
+        assertEquals(0.75D, ReceiverMix.noiseDuck(0.25D, 0.5D), 1e-9, "half the noise on a fair band");
+        assertTrue(ReceiverMix.noiseDuck(0.5D, 1.0D) > 0.7D, "a blackout stays loud under a middling signal");
+        assertTrue(ReceiverMix.noiseDuck(0.24D, 0.1D) < 0.3D, "just under S3 only a little comes back");
+    }
 }

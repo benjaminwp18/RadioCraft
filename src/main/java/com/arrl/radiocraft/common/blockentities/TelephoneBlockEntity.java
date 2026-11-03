@@ -73,6 +73,8 @@ public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectP
 	public static final int RING_ON_TICKS = 40;
 	/** On the LCD (flashing) when a number is on two phones, so neither can be called. */
 	public static final String EXT_IN_USE = "EXT IN USE";
+	/** On the caller's LCD when a Phone PA only takes local calls. */
+	public static final String LOCAL_ONLY = "LOCAL CALLS ONLY";
 
 	public enum State { IDLE, CALLING, RINGING, IN_CALL }
 
@@ -116,8 +118,25 @@ public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectP
 	private volatile Vec3 holderEar = null;
 
 	public TelephoneBlockEntity(BlockPos pos, BlockState state) {
-		super(RadiocraftBlockEntities.TELEPHONE.get(), pos, state);
+		this(RadiocraftBlockEntities.TELEPHONE.get(), pos, state);
 	}
+
+	protected TelephoneBlockEntity(net.minecraft.world.level.block.entity.BlockEntityType<?> type, BlockPos pos, BlockState state) {
+		super(type, pos, state);
+	}
+
+	/** False for what an All-Call should not ring. */
+	protected boolean ringsOnAllCall() {
+		return true;
+	}
+
+	/** False if this phone turns away a call from {@code caller}. */
+	protected boolean acceptsCallFrom(TelephoneBlockEntity caller) {
+		return true;
+	}
+
+	/** It has just started ringing. */
+	protected void onRung() {}
 
 	public static Collection<TelephoneBlockEntity> loaded(Level level) {
 		Map<BlockPos, TelephoneBlockEntity> map = LOADED.get(level.dimension());
@@ -187,7 +206,7 @@ public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectP
 			phone.serverTick();
 	}
 
-	private void serverTick() {
+	protected void serverTick() {
 		if(level == null)
 			return;
 		tickHandset();
@@ -406,6 +425,8 @@ public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectP
 				status = "THAT IS THIS PHONE";
 			else if(callee == null)
 				status = "NUMBER " + number + " NOT FOUND";
+			else if(!callee.acceptsCallFrom(this))
+				status = LOCAL_ONLY;
 			else if(callee.state != State.IDLE)
 				status = "BUSY";
 			else {
@@ -420,6 +441,7 @@ public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectP
 				callee.stateTicks = 0;
 				callee.status = "";
 				callee.sync();
+				callee.onRung();
 			}
 		}
 		sync();
@@ -427,7 +449,7 @@ public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectP
 
 	/** Rings every free phone of {@code phones} but this one. */
 	private void allCall(List<TelephoneBlockEntity> phones, String number) {
-		List<TelephoneBlockEntity> others = phones.stream().filter(phone -> phone != this).toList();
+		List<TelephoneBlockEntity> others = phones.stream().filter(phone -> phone != this && phone.ringsOnAllCall()).toList();
 		List<TelephoneBlockEntity> free = others.stream().filter(phone -> phone.state == State.IDLE).toList();
 		if(others.isEmpty())
 			status = "NO OTHER PHONES";
@@ -525,7 +547,7 @@ public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectP
 		return true;
 	}
 
-	private void sync() {
+	protected void sync() {
 		setChanged();
 		if(level != null && !level.isClientSide)
 			level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
@@ -575,7 +597,7 @@ public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectP
 	}
 
 	/** Plays a frame from the other end out of this phone's earpiece. Voice thread. */
-	private synchronized void playIncoming(ServerLevel voiceLevel, short[] pcm, double gain) {
+	protected synchronized void playIncoming(ServerLevel voiceLevel, short[] pcm, double gain) {
 		if(RadiocraftVoicePlugin.API == null)
 			return;
 		if(earpiece == null) {

@@ -49,6 +49,7 @@ def panel(w, h):
     return image
 
 
-out = GUI / "pabx.png"
-panel(WIDTH, HEIGHT).save(out)
-print("wrote", out)
+if __name__ == "__main__":
+    out = GUI / "pabx.png"
+    panel(WIDTH, HEIGHT).save(out)
+    print("wrote", out)

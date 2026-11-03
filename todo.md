@@ -546,6 +546,13 @@ Models and textures we want drawn by someone else are listed in [doc/ModelDesign
   - [x] Maintainer's models in (2026-10-27): `telephone_wallmount.json` (drawn lying down, stood up by blockstate x 90)
     and `phone_item.json` (renamed from `phone_Item.json`); the script works out the handset item's display slots
   - [ ] Keep linked radios' chunks loaded? (today a far end in an unloaded chunk drops the link)
+  - [x] Phones draw power through their PABX (maintainer, 2026-11-02): `phone_power_use` 0.4 a tick on top of the PABX's
+    2 (20 phones match an HF receiver), a Phone PA triple on a call. The HF receiver now reads `hf_receiver`.
+  - [x] RF passes through wood planks, stairs and slabs, glass, wool and leaves (maintainer, 2026-11-02): tag
+    `rf_transparent`, read by the terrain atlas and the handheld and manpack indoors check. Microwave paths still need a clear line.
+  - [x] Phone PA (maintainer, 2026-11-02): a phone with no handset that answers at once and plays the caller through
+    speakers touching it or on its data wire. Extension set on its screen, optional local calls only, skipped by
+    All-Call. `PhonePaGameTests`. Placeholder texture from `tools/phone_pa_assets.py`.
   - [x] SSB with several stations (maintainer, 2026-11-02): weak voices keep their level and the static stays up with
     them; a mix weights stations by strength and nearness (`ReceiverMix.nearness`), with one shared AGC, small per-station
     pitch offsets, a late sky path on HF skip and slight overload from a transmitter right beside the receiver. A transmitting antenna

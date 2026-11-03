@@ -1,0 +1,11 @@
+{
+  "values": [
+    "#minecraft:planks",
+    "#minecraft:wooden_stairs",
+    "#minecraft:wooden_slabs",
+    "#minecraft:wool",
+    "#minecraft:leaves",
+    "#c:glass_blocks",
+    "#c:glass_panes"
+  ]
+}

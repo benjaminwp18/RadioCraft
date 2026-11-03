@@ -64,6 +64,9 @@ public class RadiocraftBlockTagsProvider extends BlockTagsProvider {
                 .add(RadiocraftBlocks.DATA_WIRE.get())
                 .add(RadiocraftBlocks.COLOURED_DATA_WIRE.values().stream().map(net.neoforged.neoforge.registries.DeferredHolder::get).toArray(Block[]::new))
                 .add(RadiocraftBlocks.WALL_SPEAKER.get(), RadiocraftBlocks.LOUDSPEAKER.get()) // The wire is their speaker line.
+                .add(RadiocraftBlocks.DESK_SPEAKERS.values().stream().map(net.neoforged.neoforge.registries.DeferredHolder::get).toArray(Block[]::new)) // For a Phone PA.
+                .add(RadiocraftBlocks.LARGE_SPEAKER.get(), RadiocraftBlocks.PREMIUM_SPEAKER_MARBLE.get(), RadiocraftBlocks.PREMIUM_SPEAKER_IRON.get(), RadiocraftBlocks.PREMIUM_SPEAKER_GOLD.get())
+                .add(RadiocraftBlocks.PHONE_PA.get())
                 .add(RadiocraftBlocks.MICROWAVE_RADIO.get()) // The line to the stations it serves and its site's other radios:
                 .add(RadiocraftBlocks.TELEPHONE.get(), RadiocraftBlocks.PABX.get(), RadiocraftBlocks.APRS_TERMINAL.get(),
                         RadiocraftBlocks.DIRECTION_FINDER.get(), RadiocraftBlocks.MAP_DIRECTION_FINDER.get())
@@ -73,6 +76,15 @@ public class RadiocraftBlockTagsProvider extends BlockTagsProvider {
 
         // Signal sources that only report a reading: Another Weather Mod's instruments re-read the weather every second, and
         // in a storm each new reading popped a nearby radio with interference (2026-10-30).
+        tag(RadiocraftTags.Blocks.RF_TRANSPARENT)
+                .addTag(net.minecraft.tags.BlockTags.PLANKS)
+                .addTag(net.minecraft.tags.BlockTags.WOODEN_STAIRS)
+                .addTag(net.minecraft.tags.BlockTags.WOODEN_SLABS)
+                .addTag(net.minecraft.tags.BlockTags.WOOL)
+                .addTag(net.minecraft.tags.BlockTags.LEAVES)
+                .addTag(net.neoforged.neoforge.common.Tags.Blocks.GLASS_BLOCKS)
+                .addTag(net.neoforged.neoforge.common.Tags.Blocks.GLASS_PANES);
+
         tag(RadiocraftTags.Blocks.QUIET_SIGNAL_SOURCES)
                 .add(RadiocraftBlocks.WEFAX_RECEIVER.get())
                 .addOptional(ResourceLocation.fromNamespaceAndPath("anotherweathermod", "wind_vane"))

@@ -118,6 +118,8 @@ public class RadiocraftBlockEntities {
 			() -> BlockEntityType.Builder.of(com.arrl.radiocraft.common.blockentities.IonosphericProcessorBlockEntity::new, RadiocraftBlocks.IONOSPHERIC_PROCESSOR.get()).build(null));
 	public static final Supplier<BlockEntityType<com.arrl.radiocraft.common.blockentities.PabxBlockEntity>> PABX = BLOCK_ENTITY_TYPES.register("pabx",
 			() -> BlockEntityType.Builder.of(com.arrl.radiocraft.common.blockentities.PabxBlockEntity::new, RadiocraftBlocks.PABX.get()).build(null));
+	public static final Supplier<BlockEntityType<com.arrl.radiocraft.common.blockentities.PhonePaBlockEntity>> PHONE_PA = BLOCK_ENTITY_TYPES.register("phone_pa",
+			() -> BlockEntityType.Builder.of(com.arrl.radiocraft.common.blockentities.PhonePaBlockEntity::new, RadiocraftBlocks.PHONE_PA.get()).build(null));
 	public static final Supplier<BlockEntityType<TelephoneBlockEntity>> TELEPHONE = BLOCK_ENTITY_TYPES.register("telephone",
 			() -> BlockEntityType.Builder.of(TelephoneBlockEntity::new, RadiocraftBlocks.TELEPHONE.get()).build(null));
 	public static final Supplier<BlockEntityType<MicrowaveDishBlockEntity>> MICROWAVE_HORN = BLOCK_ENTITY_TYPES.register("microwave_horn",

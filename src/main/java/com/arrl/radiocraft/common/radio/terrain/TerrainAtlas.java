@@ -161,7 +161,7 @@ public final class TerrainAtlas extends SavedData implements TerrainMath.HeightS
         return atlas;
     }
 
-    /** The surface height of each 4 x 4 cell of a loaded chunk: the average over its columns, ignoring leaves. */
+    /** The surface height of each 4 x 4 cell of a loaded chunk: the average over its columns, ignoring what RF passes through. */
     public static short[] sample(LevelChunk chunk) {
         short[] cells = new short[16];
         for(int cx = 0; cx < 4; cx++)
@@ -169,10 +169,22 @@ public final class TerrainAtlas extends SavedData implements TerrainMath.HeightS
                 int sum = 0;
                 for(int dx = 0; dx < TerrainMath.CELL; dx++)
                     for(int dz = 0; dz < TerrainMath.CELL; dz++)
-                        sum += chunk.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, cx * TerrainMath.CELL + dx, cz * TerrainMath.CELL + dz) + 1;
+                        sum += surface(chunk, cx * TerrainMath.CELL + dx, cz * TerrainMath.CELL + dz);
                 cells[cx * 4 + cz] = (short)Math.round(sum / 16.0F);
             }
         return cells;
+    }
+
+    /** The height RF sees in a column of a chunk ({@code x}, {@code z} within it): the top block that stops it, plus 1. */
+    public static int surface(LevelChunk chunk, int x, int z) {
+        int y = chunk.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, x, z);
+        net.minecraft.core.BlockPos.MutableBlockPos pos = new net.minecraft.core.BlockPos.MutableBlockPos(x, y, z);
+        for(; y >= chunk.getMinBuildHeight(); y--) {
+            net.minecraft.world.level.block.state.BlockState state = chunk.getBlockState(pos.setY(y));
+            if(!state.is(com.arrl.radiocraft.common.init.RadiocraftTags.Blocks.RF_TRANSPARENT) && Heightmap.Types.MOTION_BLOCKING_NO_LEAVES.isOpaque().test(state))
+                break;
+        }
+        return y + 1;
     }
 
     public static long key(int chunkX, int chunkZ) {

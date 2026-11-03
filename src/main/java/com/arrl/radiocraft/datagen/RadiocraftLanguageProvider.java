@@ -159,6 +159,17 @@ public class RadiocraftLanguageProvider extends LanguageProvider {
 			provider.add("key.radiocraft.open_manpack", "Open Worn Manpack");
 			provider.addBlock(RadiocraftBlocks.TELEPHONE, "Telephone");
 			provider.addBlock(RadiocraftBlocks.PABX, "Phone PABX");
+			provider.addBlock(RadiocraftBlocks.PHONE_PA, "Phone PA");
+			provider.add("tooltip.radiocraft.phone_pa", "Put it on a Phone PABX, then call its extension: it answers at once and the caller's voice comes out of every speaker touching it or on its data wire. Right click to set its extension and limit it to local calls.");
+			provider.add("container.radiocraft.phone_pa", "Phone PA");
+			provider.add("screen.radiocraft.phone_pa.extension", "Extension");
+			provider.add("screen.radiocraft.phone_pa.extension_label", "Extension (empty: the PABX picks)");
+			provider.add("screen.radiocraft.phone_pa.speakers", "Speakers connected: %s");
+			provider.add("screen.radiocraft.phone_pa.local_only", "Allow within local PABX only");
+			provider.add("screen.radiocraft.phone_pa.save", "Save");
+			provider.add("screen.radiocraft.phone_pa.saved", "Saved");
+			provider.add("screen.radiocraft.phone_pa.bad_extension", "The extension is a number from 0 to 99999");
+			provider.add("screen.radiocraft.phone_pa.extension_taken", "No PABX, or extension %s is already in use");
 			provider.add("tooltip.radiocraft.pabx", "Every telephone needs one: phones touching it or on its data wire call each other by extension. Needs power. PABXes on one data wire or across a microwave link call each other by master number, then extension; with the same master number they act as one PABX. Right click to set its master number, first extension, All-Call extension and name.");
 			provider.add("container.radiocraft.pabx", "Phone PABX");
 			provider.add("screen.radiocraft.pabx.master", "Master number");

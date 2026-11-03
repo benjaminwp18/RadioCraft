@@ -133,6 +133,17 @@ public class RadiocraftRecipesProvider extends RecipeProvider {
                 .define('P', Items.TERRACOTTA)
                 .unlockedBy("has_microphone_element", has(RadiocraftItems.MICROPHONE_ELEMENT.get()))
                 .save(recipeOutput, Radiocraft.id("telephone"));
+        // The Phone PA: a phone's works and a radio speaker's output, in an iron case.
+        ShapedRecipeBuilder.shaped(RecipeCategory.MISC, RadiocraftItems.PHONE_PA.get(), 1)
+                .pattern("III")
+                .pattern("DTD")
+                .pattern("ISI")
+                .define('I', Items.IRON_INGOT)
+                .define('D', RadiocraftItems.DATA_WIRE.get())
+                .define('T', RadiocraftItems.TELEPHONE.get())
+                .define('S', RadiocraftItems.RADIO_SPEAKER.get())
+                .unlockedBy("has_telephone", has(RadiocraftItems.TELEPHONE.get()))
+                .save(recipeOutput, Radiocraft.id("phone_pa"));
         // The phone PABX: a comparator for the switching, data wire for the lines, a redstone ringer, in an iron case.
         ShapedRecipeBuilder.shaped(RecipeCategory.MISC, RadiocraftItems.PABX.get(), 1)
                 .pattern("III")

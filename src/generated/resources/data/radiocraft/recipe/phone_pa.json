@@ -1,0 +1,27 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "D": {
+      "item": "radiocraft:data_wire"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "S": {
+      "item": "radiocraft:radio_speaker"
+    },
+    "T": {
+      "item": "radiocraft:telephone"
+    }
+  },
+  "pattern": [
+    "III",
+    "DTD",
+    "ISI"
+  ],
+  "result": {
+    "count": 1,
+    "id": "radiocraft:phone_pa"
+  }
+}

@@ -74,6 +74,7 @@ public class PabxBlockEntity extends BlockEntity implements INetworkObjectProvid
 	/** The phones it has numbered, so a number set by hand later is left alone. */
 	private final Set<BlockPos> numbered = new HashSet<>();
 	private boolean powered = false;
+	private double phoneLoad = 0.0D;
 	/** What the last save on its screen came to: a translation key and its argument (synced, not saved). */
 	private String statusKey = "", statusArg = "";
 	/** The client's copy of {@link #masterDigits()}, for the screen. */
@@ -234,6 +235,12 @@ public class PabxBlockEntity extends BlockEntity implements INetworkObjectProvid
 	public static PabxBlockEntity of(Level level, BlockPos pos) {
 		List<PabxBlockEntity> found = DataWire.linked(level, pos, PabxBlockEntity.class);
 		return found.isEmpty() ? null : found.get(0);
+	}
+
+	/** Lets go of {@code phone}'s number, so the next numbering gives it a new one. */
+	public void forget(TelephoneBlockEntity phone) {
+		if(numbered.remove(phone.getBlockPos()))
+			setChanged();
 	}
 
 	/** The telephones it serves: touching it or on its data wire, and nearer it than any other PABX. */
@@ -402,12 +409,30 @@ public class PabxBlockEntity extends BlockEntity implements INetworkObjectProvid
 		if(level.getGameTime() % 20 == 0) {
 			if(powered)
 				number();
+			updatePhoneLoad(level);
 			Set<Integer> found = powered ? findClashes() : Set.of();
 			if(!found.equals(clashes)) {
 				clashes = found;
 				sync();
 			}
 		}
+	}
+
+	/** Passes what its phones draw on to the power wire ({@link PabxNetworkObject}). */
+	private void updatePhoneLoad(Level level) {
+		List<TelephoneBlockEntity> phones = phones();
+		int paCalls = 0;
+		for(TelephoneBlockEntity phone : phones)
+			if(phone instanceof PhonePaBlockEntity && phone.getState() == TelephoneBlockEntity.State.IN_CALL)
+				paCalls++;
+		phoneLoad = PabxNumbers.phoneLoad(phones.size(), paCalls, RadiocraftServerConfig.PHONE_POWER_USE.get(), RadiocraftServerConfig.PHONE_PA_CALL_MULTIPLIER.get());
+		if(getNetworkObject(level, worldPosition) instanceof PabxNetworkObject object)
+			object.setPhoneLoad(phoneLoad);
+	}
+
+	/** What its phones add to its power draw per tick, kept up by its tick. */
+	public double getPhoneLoad() {
+		return phoneLoad;
 	}
 
 	/** Gives each phone it has not numbered yet the lowest number free here and on linked PABXes, from its first extension. */

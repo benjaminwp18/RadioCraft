@@ -88,6 +88,7 @@ public class RadiocraftCapabilities {
 				RadiocraftBlocks.MICROWAVE_RADIO.get(),
 				RadiocraftBlocks.TELEPHONE.get(),
 				RadiocraftBlocks.PABX.get(),
+				RadiocraftBlocks.PHONE_PA.get(),
 				RadiocraftBlocks.MICROWAVE_HORN.get(),
 				net.minecraft.world.level.block.Blocks.LIGHTNING_ROD); // An antenna when coax runs to it (LightningRodAntennas).
 		event.registerBlock(BE_NETWORKS, (level, pos, state, be, side) -> BENetworksCapability.get(level), premiumAndCheapRadios()); // The plain ones are above.

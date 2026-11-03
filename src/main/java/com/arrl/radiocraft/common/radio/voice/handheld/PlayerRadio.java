@@ -505,7 +505,7 @@ public class PlayerRadio implements IVoiceTransmitter, IVoiceReceiver, IAntenna 
                 this.voicePosition = player.getEyePosition();
                 this.voiceLevel = player.level();
                 this.antennaPos.set(new AntennaPos(player.blockPosition(), player.level()));
-                this.indoors = !player.level().canSeeSky(BlockPos.containing(player.getEyePosition()));
+                this.indoors = com.arrl.radiocraft.common.radio.terrain.TerrainPropagation.isIndoors(player.level(), BlockPos.containing(player.getEyePosition()));
             }
         }
 

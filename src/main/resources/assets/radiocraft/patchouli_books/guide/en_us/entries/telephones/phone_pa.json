@@ -1,0 +1,21 @@
+{
+  "name": "Phone PA",
+  "icon": "radiocraft:phone_pa",
+  "category": "radiocraft:telephones",
+  "sortnum": 2,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "A $(item)Phone PA$() puts a call on the speakers. Connect it to a $(l:radiocraft:telephones/pabx)Phone PABX$(/l) like a phone, touching or by $(l:radiocraft:radios/data_wire)data wire$(/l). Call its extension and it answers at once: the caller's voice comes out of every speaker touching it or on its data wire, whether desk, large, premium, wall or PA horn.$(br2)It only plays. Nobody can talk back through it."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Settings",
+      "text": "Right click it.$(li)$(thing)Extension$(): the number to call. Leave it empty and the PABX picks one.$(li)$(thing)Allow within local PABX only$(): only phones on its own PABX, or one linked by a shared master number, can call it.$(br2)All-Call does not ring it. Its lamp is lit during a call."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "radiocraft:phone_pa"
+    }
+  ]
+}

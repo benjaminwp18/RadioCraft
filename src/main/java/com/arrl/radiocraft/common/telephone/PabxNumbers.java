@@ -38,6 +38,11 @@ public final class PabxNumbers {
 		return digits(text) && text.length() <= MAX_EXTENSION_DIGITS ? Integer.parseInt(text) : -1;
 	}
 
+	/** The power its phones add to a PABX's draw per tick: {@code phones} in all, {@code paCalls} of them Phone PAs on a call. */
+	public static double phoneLoad(int phones, int paCalls, double phoneUse, double paMultiplier) {
+		return phoneUse * (phones - paCalls + paCalls * paMultiplier);
+	}
+
 	/** True if {@code c} may be in a PABX name: a letter, a digit, a space or a dash. */
 	public static boolean nameChar(char c) {
 		return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == ' ' || c == '-';

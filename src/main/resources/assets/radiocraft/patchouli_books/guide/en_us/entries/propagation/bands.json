@@ -20,7 +20,7 @@
     },
     {
       "type": "patchouli:text",
-      "text": "Hills in the way weaken line of sight: badly on VHF, much less on 80 m, and HF also loses some at every cliff. Skip leaves at a low angle on 10 and 20 m, so a station deep in a valley loses it over the valley walls, while 80 m goes nearly straight up. A handheld indoors or underground is weaker. Build high!",
+      "text": "Hills in the way weaken line of sight: badly on VHF, much less on 80 m, and HF also loses some at every cliff. Skip leaves at a low angle on 10 and 20 m, so a station deep in a valley loses it over the valley walls, while 80 m goes nearly straight up. A handheld indoors or underground is weaker. RF passes through wood planks, stairs and slabs, glass, wool and leaves, so an antenna in the attic does fine. Build high!",
       "title": "Hills and valleys"
     }
   ]

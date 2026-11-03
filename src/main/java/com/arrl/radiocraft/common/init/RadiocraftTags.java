@@ -20,6 +20,8 @@ public class RadiocraftTags {
 		 * alarm): their updates make no redstone interference.
 		 */
 		public static final TagKey<Block> QUIET_SIGNAL_SOURCES = TagKey.create(Registries.BLOCK, Radiocraft.id("quiet_signal_sources"));
+		/** Blocks RF passes through: an antenna or a handheld under a roof of these is as good as outside. */
+		public static final TagKey<Block> RF_TRANSPARENT = TagKey.create(Registries.BLOCK, Radiocraft.id("rf_transparent"));
 	}
 
 }

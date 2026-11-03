@@ -78,6 +78,7 @@ public class RadiocraftTabs {
         output.accept(RadiocraftItems.MICROWAVE_RADIO.get());
         output.accept(RadiocraftItems.TELEPHONE.get());
         output.accept(RadiocraftItems.PABX.get());
+        output.accept(RadiocraftItems.PHONE_PA.get());
 
         // Speakers (released 2026-10-27)
         RadiocraftItems.DESK_SPEAKERS.values().forEach(item -> output.accept(item.get()));
