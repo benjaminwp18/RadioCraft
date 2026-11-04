@@ -20,6 +20,20 @@ public final class Afsk {
 	private static final double LEVEL = 0.35D;
 	private static final int FLAG = 0x7E;
 
+	/** The voice ids data bursts go out under (a radio's or handheld's TNC), for receivers that mute packet noise. */
+	private static final java.util.Set<java.util.UUID> DATA_SOURCES = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
+	/** Notes {@code id} as the voice id a TNC sends its bursts under; returns it. */
+	public static java.util.UUID markDataSource(java.util.UUID id) {
+		DATA_SOURCES.add(id);
+		return id;
+	}
+
+	/** True if audio from {@code id} is a data burst rather than someone talking. */
+	public static boolean isDataSource(@org.jetbrains.annotations.Nullable java.util.UUID id) {
+		return id != null && DATA_SOURCES.contains(id);
+	}
+
 	/** Frames of the burst for a packet of {@code bytes} bytes, its bits seeded from {@code seed}. */
 	public static List<short[]> burst(int bytes, long seed) {
 		int totalBytes = PREAMBLE_FLAGS + Math.max(0, bytes) + TAIL_FLAGS;

@@ -75,26 +75,21 @@ public final class SquelchTail {
 	}
 
 	/**
-	 * The tail itself, at output {@code level}: the same softened white noise as a fading FM signal's static
-	 * ({@link RadioVoiceProcessor#fmFade}), in at once and dying away over its last half.
+	 * The tail itself, at output {@code level}: the same static as a fading FM signal's ({@link FmStatic}), from a place
+	 * in it picked by {@code seed}, in at once and dying away over its last half.
 	 */
 	public static List<short[]> frames(double signal, double level, long seed) {
 		int count = tailFrames(signal);
 		int frame = RepeaterAudio.FRAME, total = count * frame;
 		double amplitude = RadioVoiceProcessor.FM_STATIC * tailLevel(signal) * level * 32767.0D;
-		long state = seed | 1L;
-		double soft = 0.0D;
+		FmStatic.Cursor noise = new FmStatic.Cursor(seed);
 		List<short[]> out = new ArrayList<>(count);
 		for(int f = 0; f < count; f++) {
 			short[] pcm = new short[frame];
 			for(int i = 0; i < frame; i++) {
 				int n = f * frame + i;
-				state ^= state << 13;
-				state ^= state >>> 7;
-				state ^= state << 17;
-				soft = 0.5D * soft + 0.5D * (((state >>> 11) * 0x1.0p-53) * 2.0D - 1.0D);
 				double envelope = Math.min(1.0D, n / 96.0D) * Math.min(1.0D, 2.0D * (total - n) / (double)total);
-				pcm[i] = (short)Math.max(-32768, Math.min(32767, Math.round(soft * amplitude * envelope)));
+				pcm[i] = (short)Math.max(-32768, Math.min(32767, Math.round(noise.next() * amplitude * envelope)));
 			}
 			out.add(pcm);
 		}

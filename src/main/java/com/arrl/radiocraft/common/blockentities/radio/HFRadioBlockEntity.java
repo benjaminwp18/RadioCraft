@@ -62,10 +62,11 @@ public abstract class HFRadioBlockEntity extends RadioBlockEntity implements ICW
 
 	@Override
 	public void receiveCW(AntennaCWPacket packet) {
-		if(level instanceof ServerLevel serverLevel && canReceiveCW()) {
+		if(level instanceof ServerLevel serverLevel && canReceiveCW() && !isDeafNow()) { // Not while its own key is down.
 			List<AntennaNetworkObject> antennas = ((RadioNetworkObject)IBENetworks.getObject(this.level, worldPosition)).getAntennas();
 			if(antennas.size() <= 1) { // None: it came in through the bare connector.
 				recordSignal(packet.getStrength());
+				com.arrl.radiocraft.common.moderation.ModerationHooks.heard(packet, this, level, worldPosition, null, packet.getStrength());
 				List<CWBuffer> buffers = List.copyOf(packet.getBuffers());
 				if(isParrot())
 					parrotCWQueue.add(new QueuedCW(buffers, lastSignalGameTime + parrotDelayTicks));
@@ -105,13 +106,16 @@ public abstract class HFRadioBlockEntity extends RadioBlockEntity implements ICW
 		if(level instanceof ServerLevel serverLevel && canTransmitCW() && !isBlown()) {
 			List<AntennaNetworkObject> antennas = ((RadioNetworkObject)IBENetworks.getObject(this.level, worldPosition)).getAntennas();
 			if(antennas.size() == 1) {
+				com.arrl.radiocraft.common.moderation.ModerationHooks.cw(antennas.get(0).getAntenna(), this, serverLevel, buffers, getTunedFrequency(), band, null);
 				antennas.get(0).transmitCWPacket(serverLevel, buffers, band, getTunedFrequency());
 				recordTransmit(); // Keying is RF on the air too, for the transmit side of redstone interference.
 			}
 			else if(antennas.size() > 1)
 				overdraw();
-			else if(bareConnector != null) // No antenna: a few blocks out of the bare connector.
+			else if(bareConnector != null) { // No antenna: a few blocks out of the bare connector.
+				com.arrl.radiocraft.common.moderation.ModerationHooks.cw(bareConnector, this, serverLevel, buffers, getTunedFrequency(), band, null);
 				bareConnector.transmitCWPacket(serverLevel, buffers, band, getTunedFrequency());
+			}
 		}
 	}
 

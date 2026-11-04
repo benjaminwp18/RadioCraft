@@ -4,6 +4,7 @@ import com.arrl.radiocraft.CommonConfig;
 import com.arrl.radiocraft.api.benetworks.BENetworkObject;
 import com.arrl.radiocraft.api.capabilities.IBENetworks;
 import com.arrl.radiocraft.common.be_networks.network_objects.DuplexerNetworkObject;
+import com.arrl.radiocraft.common.moderation.ModerationHooks;
 import net.minecraft.core.Direction;
 import com.arrl.radiocraft.common.be_networks.network_objects.RadioNetworkObject;
 import com.arrl.radiocraft.common.be_networks.network_objects.RepeaterNetworkObject;
@@ -88,6 +89,12 @@ public class VHFRepeaterBlockEntity extends VHFRadioBlockEntity {
 	private int kerchunkTicks = 0;
 	private final ConcurrentLinkedQueue<short[]> generated = new ConcurrentLinkedQueue<>();
 	private final UUID voiceId;
+	// An autopatch linked to it (RepeaterAutopatchBlockEntity), as of the game time it last said so; read on the voice thread.
+	@Nullable
+	private volatile RepeaterAutopatchBlockEntity patch = null;
+	private volatile long patchSeenGameTime = -1L;
+	protected volatile long lastPatchGameTime = -1L; // Phone audio last went out.
+	private final UUID patchVoiceId;
 
 	public VHFRepeaterBlockEntity(BlockPos pos, BlockState state) {
 		this(RadiocraftBlockEntities.VHF_REPEATER.get(), pos, state);
@@ -97,6 +104,7 @@ public class VHFRepeaterBlockEntity extends VHFRadioBlockEntity {
 		super(type, pos, state, Band.getBand("2m"));
 		frequency = DEFAULT_INPUT;
 		voiceId = UUID.nameUUIDFromBytes(("radiocraft-repeater-" + pos.asLong()).getBytes(StandardCharsets.UTF_8));
+		patchVoiceId = UUID.nameUUIDFromBytes(("radiocraft-autopatch-" + pos.asLong()).getBytes(StandardCharsets.UTF_8));
 	}
 
 	// -------------------- SETTINGS --------------------
@@ -257,6 +265,12 @@ public class VHFRepeaterBlockEntity extends VHFRadioBlockEntity {
 	public void setCtcssTone(float tone) {}
 
 	/** The repeater listens whenever it is on; the speaker switch only decides whether it plays what it hears. */
+	/** A repeater listens on its input while it sends on its output. */
+	@Override
+	protected boolean hearsWhileTransmitting() {
+		return true;
+	}
+
 	@Override
 	protected boolean isListening() {
 		return isPowered();
@@ -334,6 +348,9 @@ public class VHFRepeaterBlockEntity extends VHFRadioBlockEntity {
 			timedOut = false;
 		}
 		lastInputGameTime = now;
+		RepeaterAutopatchBlockEntity autopatch = patch;
+		if(autopatch != null && now - patchSeenGameTime <= 2)
+			autopatch.fromRadio(packet.getLevel(), audio); // Down the phone line, whatever the transmitter is doing.
 		if(!txEnabled)
 			return;
 		if(timeoutTicks > 0 && now - inputStartGameTime > timeoutTicks) {
@@ -343,7 +360,16 @@ public class VHFRepeaterBlockEntity extends VHFRadioBlockEntity {
 		if(isKerchunking())
 			return; // The tick keys it up and down; the voice never gets through.
 		ServerLevel serverLevel = packet.getLevel();
-		transmitVoice(() -> serverLevel, audio, txFrequency, packet.getSourcePlayer(), txTone);
+		// The moderation log notes it as repeated, linked to the transmission it heard (logged once, at its source).
+		boolean logged = ModerationHooks.recording();
+		ModerationHooks.Tag was = logged ? ModerationHooks.push(ModerationHooks.Tag.repeated(packet)) : null;
+		try {
+			transmitVoice(() -> serverLevel, audio, txFrequency, packet.getSourcePlayer(), txTone);
+		}
+		finally {
+			if(logged)
+				ModerationHooks.pop(was);
+		}
 		recordTransmit();
 	}
 
@@ -373,6 +399,67 @@ public class VHFRepeaterBlockEntity extends VHFRadioBlockEntity {
 
 	public boolean isTimedOut() {
 		return timedOut && isInputActive();
+	}
+
+	// -------------------- AUTOPATCH --------------------
+
+	/** An autopatch linked to it says so, every tick: what comes in on the input goes down its phone line. */
+	public void attachPatch(RepeaterAutopatchBlockEntity autopatch) {
+		patch = autopatch;
+		patchSeenGameTime = level == null ? 0L : level.getGameTime();
+	}
+
+	/** True if it can put anything out for an autopatch: on, transmitter enabled, and not deafening itself. */
+	public boolean canPatch() {
+		return isPowered() && txEnabled && !isKerchunking();
+	}
+
+	/**
+	 * One frame of phone audio from an autopatch, out on the output as it arrives. Half duplex: while a signal is
+	 * coming in on the input, the frame is dropped. Voice chat thread. Returns true if it went out.
+	 */
+	public boolean transmitPatched(de.maxhenkel.voicechat.api.ServerLevel voiceLevel, short[] frame) {
+		if(level == null || !canPatch() || isInputActive())
+			return false;
+		lastPatchGameTime = level.getGameTime();
+		ModerationHooks.Tag was = ModerationHooks.push(ModerationHooks.Tag.AUTOPATCH); // The phone caller, for the moderation log.
+		try {
+			transmitVoice(voiceLevel, frame, txFrequency, patchVoiceId, txTone);
+		}
+		finally {
+			ModerationHooks.pop(was);
+		}
+		recordTransmit();
+		return true;
+	}
+
+	/** Tones from an autopatch (a beep, the ring), queued on the output after anything already waiting. Server thread. */
+	public void queueTones(java.util.List<short[]> frames) {
+		if(level == null || !canPatch() || frames.isEmpty())
+			return;
+		generated.addAll(frames);
+		awake = true;
+		lastUseGameTime = level.getGameTime();
+		if(!keyed) {
+			keyed = true;
+			hangUntil = level.getGameTime();
+			updateIsReceiving();
+		}
+	}
+
+	/** Drops the tones not yet sent (the ring stops when the call is answered). */
+	public void clearTones() {
+		generated.clear();
+	}
+
+	/** True while tones are waiting to go out. */
+	public boolean hasTones() {
+		return !generated.isEmpty();
+	}
+
+	/** The game time phone audio from an autopatch last went out, -1 for never. */
+	public long getLastPatchGameTime() {
+		return lastPatchGameTime;
 	}
 
 	@Override
@@ -422,6 +509,13 @@ public class VHFRepeaterBlockEntity extends VHFRadioBlockEntity {
 			hangUntil = now + hangTicks;
 			return;
 		}
+		if(lastPatchGameTime >= 0 && now - lastPatchGameTime <= INPUT_GAP_TICKS) { // The phone talking through an autopatch.
+			awake = true;
+			lastUseGameTime = now;
+			keyed = true;
+			hangUntil = now + hangTicks;
+			return;
+		}
 		if(!keyed) {
 			idleId(now);
 			if(!keyed)
@@ -436,15 +530,21 @@ public class VHFRepeaterBlockEntity extends VHFRadioBlockEntity {
 			}
 		}
 		int frames = now % 2 == 0 ? 3 : 2; // 2.5 frames of 20 ms per 50 ms tick.
-		for(int i = 0; i < frames; i++) {
-			short[] frame = generated.poll();
-			if(frame == null) {
-				if(now > hangUntil)
-					break;
-				frame = RepeaterAudio.silence(); // Carrier up, nobody talking.
+		ModerationHooks.Tag was = ModerationHooks.push(ModerationHooks.Tag.SKIP); // Beeps, hang time and its ID: not logged.
+		try {
+			for(int i = 0; i < frames; i++) {
+				short[] frame = generated.poll();
+				if(frame == null) {
+					if(now > hangUntil)
+						break;
+					frame = RepeaterAudio.silence(); // Carrier up, nobody talking.
+				}
+				transmitVoice(() -> serverLevel, frame, txFrequency, voiceId, txTone);
+				recordTransmit();
 			}
-			transmitVoice(() -> serverLevel, frame, txFrequency, voiceId, txTone);
-			recordTransmit();
+		}
+		finally {
+			ModerationHooks.pop(was);
 		}
 		if(generated.isEmpty() && now > hangUntil)
 			keyed = false;
@@ -487,9 +587,15 @@ public class VHFRepeaterBlockEntity extends VHFRadioBlockEntity {
 		kerchunkTicks++;
 		if(phase < KERCHUNK_BURST_TICKS) {
 			int frames = now % 2 == 0 ? 3 : 2;
-			for(int i = 0; i < frames; i++) {
-				transmitVoice(() -> serverLevel, RepeaterAudio.noise(0.35D, now * 7L + i), txFrequency, voiceId, txTone);
-				recordTransmit();
+			ModerationHooks.Tag was = ModerationHooks.push(ModerationHooks.Tag.SKIP); // Noise bursts: not logged.
+			try {
+				for(int i = 0; i < frames; i++) {
+					transmitVoice(() -> serverLevel, RepeaterAudio.noise(0.35D, now * 7L + i), txFrequency, voiceId, txTone);
+					recordTransmit();
+				}
+			}
+			finally {
+				ModerationHooks.pop(was);
 			}
 		}
 		if(phase == KERCHUNK_CYCLE_TICKS - 1 && !isInputActive())

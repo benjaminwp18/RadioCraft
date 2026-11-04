@@ -10,7 +10,8 @@ import net.minecraft.sounds.SoundSource;
  * The noise a radio makes when redstone switches near its antenna: the maintainer's {@code redstone_rfi.ogg} (2026-10-27,
  * 19 s of broadband switching hash), played at the radio with its loudness following the interference level. A single
  * lever flip is a short burst that dies away with the level (a second or so of the file); a clock or a piston loop keeps
- * it going, looping the file. Plays on top of the static, which also rises. Only redstone drives it: lightning static
+ * it going, looping the file. Each burst plays one of four recordings (redstone_rfi to redstone_rfi_4, 2026-11-04): a
+ * copy ends a second after its burst dies away and the next burst gets a new one. Plays on top of the static, which also rises. Only redstone drives it: lightning static
  * feeds the same meter and had it grunting through a whole storm (2026-10-27), so it follows the redstone part alone.
  */
 public class RadioInterferenceHumSoundInstance extends AbstractTickableSoundInstance {
@@ -19,7 +20,12 @@ public class RadioInterferenceHumSoundInstance extends AbstractTickableSoundInst
 	public static final double THRESHOLD = 0.06D;
 	private static final float MAX_VOLUME = 0.8F;
 
+	/** Ticks of quiet after a burst before this copy stops, so the next burst starts a new one on another recording. */
+	private static final int QUIET_TICKS_TO_END = 20;
+
 	private final RadioBlockEntity radio;
+	private boolean heardYet = false;
+	private int quietTicks = 0;
 
 	public RadioInterferenceHumSoundInstance(RadioBlockEntity radio) {
 		super(RadiocraftSoundEvents.REDSTONE_RFI.get(), SoundSource.VOICE, SoundInstance.createUnseededRandom());
@@ -46,6 +52,12 @@ public class RadioInterferenceHumSoundInstance extends AbstractTickableSoundInst
 		}
 		else
 			volume = 0.0F;
+		if(volume > 0.0F) {
+			heardYet = true;
+			quietTicks = 0;
+		}
+		else if(heardYet && ++quietTicks >= QUIET_TICKS_TO_END)
+			stop(); // RadioBlockEntityClientHandler starts a fresh one, and sounds.json picks one of the four recordings for it.
 	}
 
 	@Override

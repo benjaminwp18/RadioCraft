@@ -30,13 +30,26 @@ public class TelephoneHandsetItem extends Item {
 		super(properties.stacksTo(1));
 	}
 
+	/** A phone with a handset on a cord: the telephone, the field phone. */
+	public interface Owner {
+		net.minecraft.core.BlockPos getBlockPos();
+
+		/** Which pick-up the handset out now is, null while it is on its cradle. */
+		@Nullable
+		java.util.UUID getHandsetId();
+
+		/** The player who has the handset up, null while it is on its cradle. */
+		@Nullable
+		java.util.UUID getHandsetHolder();
+	}
+
 	@Nullable
 	public static MicCord cord(ItemStack stack) {
 		return stack.get(RadiocraftDataComponent.MIC_CORD.get());
 	}
 
 	/** True if {@code stack} is the handset {@code phone} has out right now. */
-	public static boolean isHandsetOf(ItemStack stack, TelephoneBlockEntity phone) {
+	public static boolean isHandsetOf(ItemStack stack, Owner phone) {
 		MicCord cord = stack.getItem() instanceof TelephoneHandsetItem ? cord(stack) : null;
 		return cord != null && cord.radio().equals(phone.getBlockPos()) && cord.micId().equals(phone.getHandsetId());
 	}
@@ -47,7 +60,7 @@ public class TelephoneHandsetItem extends Item {
 		if(level.isClientSide)
 			return;
 		MicCord cord = cord(stack);
-		boolean valid = cord != null && entity instanceof Player player && level.getBlockEntity(cord.radio()) instanceof TelephoneBlockEntity phone
+		boolean valid = cord != null && entity instanceof Player player && level.getBlockEntity(cord.radio()) instanceof Owner phone
 				&& isHandsetOf(stack, phone) && player.getUUID().equals(phone.getHandsetHolder());
 		if(!valid)
 			stack.setCount(0);

@@ -1,6 +1,7 @@
 {
   "values": [
     "radiocraft:wefax_receiver",
+    "radiocraft:dtmf_decoder",
     {
       "id": "anotherweathermod:wind_vane",
       "required": false

@@ -746,7 +746,7 @@ public class WireBlock extends Block implements SimpleWaterloggedBlock {
 	/** The network bookkeeping for a strand of this kind that has just appeared at {@code pos} (as a block or in a bundle). */
 	public void strandPlaced(Level level, BlockPos pos, BlockState state) {
 		if(isData) {
-			com.arrl.radiocraft.common.be_networks.DataWire.changed(level); // No network: what it links is walked when asked.
+			com.arrl.radiocraft.common.be_networks.DataWire.changed(level, pos); // No network: what it links is walked when asked.
 			return;
 		}
 		if(checkMultipleSides(level, pos, state)) // Only bother running merge if this wire is actually connecting things.
@@ -785,12 +785,18 @@ public class WireBlock extends Block implements SimpleWaterloggedBlock {
 	 */
 	public void strandRemoved(Level level, BlockPos pos, BlockState state, Set<Strand> gone) {
 		if(isData) {
-			com.arrl.radiocraft.common.be_networks.DataWire.changed(level);
+			com.arrl.radiocraft.common.be_networks.DataWire.changed(level, pos);
 			return;
 		}
 		Map<BlockPos, Direction> links = getLinks(level, pos, state); // The old state: the strand is already gone.
 		if(links.size() >= 2) // Only bother running split if this wire was actually connecting things.
 			WireUtils.splitNetworks(level, new Strand(pos, this), gone, links, connectionPredicate(), networkWires());
+		if(isPower && level instanceof ServerLevel serverLevel) {
+			if(WireFaults.hasPowerWire(level, pos))
+				WireFaults.queue(serverLevel, pos); // Other power cables of a bundle are still there: look at them again.
+			else
+				WireFaults.forget(level, pos); // Its short (or other fault) goes with it.
+		}
 	}
 
 	/**
@@ -822,7 +828,7 @@ public class WireBlock extends Block implements SimpleWaterloggedBlock {
 
 		store.accept(fresh);
 		if(isData)
-			com.arrl.radiocraft.common.be_networks.DataWire.changed(level);
+			com.arrl.radiocraft.common.be_networks.DataWire.changed(level, pos);
 		if(!climbChanged || isData)
 			return true;
 
@@ -846,7 +852,7 @@ public class WireBlock extends Block implements SimpleWaterloggedBlock {
 		if(isPower && level instanceof ServerLevel serverLevel)
 			WireFaults.queue(serverLevel, pos); // Water next to it, a wire joined on: look again next tick.
 		if(isData && level instanceof ServerLevel serverLevel)
-			com.arrl.radiocraft.common.be_networks.DataWire.changed(serverLevel); // A device came or went at its end.
+			com.arrl.radiocraft.common.be_networks.DataWire.changed(serverLevel, pos); // A device came or went at its end.
 		return followNeighbours(level, pos, state);
 	}
 

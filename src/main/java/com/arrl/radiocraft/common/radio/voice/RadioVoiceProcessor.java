@@ -77,6 +77,7 @@ public class RadioVoiceProcessor {
 	private int fmGateLeft = 0;
 	private double fmGate = 1.0D;
 	private double fmHiss = 0.0D;
+	private final FmStatic.Cursor fmStatic = new FmStatic.Cursor(); // The recorded static, from this receiver's own place in it.
 	private final double[] pathDelay = new double[MAX_PATH_DELAY];
 	private int pathAt = 0;
 	private double pathGain = 0.0D;
@@ -125,7 +126,7 @@ public class RadioVoiceProcessor {
 				fmGateLeft = (int)(SAMPLE_RATE * (0.04D + 0.14D * nextRandom()));
 			}
 			fmGate = smooth * fmGate + (1.0D - smooth) * (fmOpen ? 1.0D : 0.0D);
-			fmHiss = 0.5D * fmHiss + 0.5D * (nextRandom() * 2.0D - 1.0D); // A little softened: hiss, not fizz.
+			fmHiss = fmStatic.next();
 			double noise = FM_STATIC * (hiss * fmGate + (1.0D - fmGate)) * fmHiss * gain;
 			pcm[i] = clamp(pcm[i] * fmGate + noise * 32767.0D);
 		}

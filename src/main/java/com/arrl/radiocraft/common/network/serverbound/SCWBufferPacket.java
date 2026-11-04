@@ -48,8 +48,16 @@ public record SCWBufferPacket(BlockPos pos, List<CWBuffer> buffers) implements C
                 return;
             if(!(context.player().containerMenu instanceof RadioMenu<?> menu) || menu.blockEntity != radio)
                 return;
-            if(radio.canTransmitCW())
+            if(!radio.canTransmitCW())
+                return;
+            // The moderation log names who keyed it.
+            var was = com.arrl.radiocraft.common.moderation.ModerationHooks.push(com.arrl.radiocraft.common.moderation.ModerationHooks.Tag.by(context.player().getUUID()));
+            try {
                 radio.transmitMorse(packet.buffers());
+            }
+            finally {
+                com.arrl.radiocraft.common.moderation.ModerationHooks.pop(was);
+            }
         });
     }
 }

@@ -212,6 +212,7 @@ public class ManpackRadio implements IAntenna {
 		if(network == null || here == null || band == null || !here.level().equals(level.getServerLevel()))
 			return;
 		TransmitterLog.record(this, here, band, frequencyHertz);
+		com.arrl.radiocraft.common.moderation.ModerationHooks.voice(this, this, here.level(), sourcePlayer, rawAudio, frequencyHertz, band, 0.0F); // Logged once, at the source.
 		for(IAntenna antenna : others(network)) {
 			AntennaPos there = antenna.getAntennaPos();
 			if(there == null || there.level() != here.level())
@@ -240,6 +241,8 @@ public class ManpackRadio implements IAntenna {
 		if(network == null || here == null || band == null)
 			return;
 		TransmitterLog.record(this, here, band, frequencyHertz);
+		Player keyer = getPlayer();
+		com.arrl.radiocraft.common.moderation.ModerationHooks.cw(this, this, level, buffers, frequencyHertz, band, keyer == null ? null : keyer.getUUID());
 		for(IAntenna antenna : others(network)) {
 			AntennaPos there = antenna.getAntennaPos();
 			if(there == null || there.level() != here.level())
@@ -279,6 +282,7 @@ public class ManpackRadio implements IAntenna {
 				* TransmitterLog.desense(here.level(), here.position(), packet.getFrequency(), packet.getSource(), this);
 		if(strength <= 0.0D)
 			return;
+		com.arrl.radiocraft.common.moderation.ModerationHooks.heard(packet, this, here.level(), here.position(), player, strength); // The wearer heard it.
 		long heard = System.nanoTime();
 		if(strength >= lastSignal || heard - lastSignalPeakNanos > 100_000_000L) { // The strongest sets the AGC, not the latest frame.
 			lastSignal = strength;
@@ -322,6 +326,7 @@ public class ManpackRadio implements IAntenna {
 		double strength = ManpackWhipAntennaType.INSTANCE.getReceiveEfficiency(packet, new EmptyAntennaData(), here.position());
 		if(strength <= 0.0D)
 			return;
+		com.arrl.radiocraft.common.moderation.ModerationHooks.heard(packet, this, here.level(), here.position(), player, strength);
 		lastSignal = strength;
 		lastSignalNanos = System.nanoTime();
 		List<CWBuffer> buffers = List.copyOf(packet.getBuffers());

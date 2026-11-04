@@ -35,6 +35,8 @@
     "radiocraft:premium_speaker_iron",
     "radiocraft:premium_speaker_gold",
     "radiocraft:phone_pa",
+    "radiocraft:field_phone",
+    "radiocraft:repeater_autopatch",
     "radiocraft:microwave_radio",
     "radiocraft:telephone",
     "radiocraft:pabx",
@@ -56,6 +58,8 @@
     "radiocraft:teletype",
     "radiocraft:wefax_receiver",
     "radiocraft:tape_player",
-    "radiocraft:ionospheric_processor"
+    "radiocraft:ionospheric_processor",
+    "radiocraft:dtmf_decoder",
+    "radiocraft:dtmf_encoder"
   ]
 }

@@ -27,6 +27,9 @@ public class GameTestDefaults {
             RadiocraftServerConfig.BATTERY_FIRES_ENABLED.set(false);
             RadiocraftServerConfig.APRS_BEACON_DEFAULT.set(false); // Stations stay quiet unless a test asks.
             RadiocraftServerConfig.APRS_DIGIPEAT_DEFAULT.set(false);
+            RadiocraftServerConfig.MODERATION_RECORD_RADIO.set(false); // ModerationLogGameTests switches it on for its batch.
+            RadiocraftServerConfig.MODERATION_RECORD_PROXIMITY.set(false);
+            RadiocraftServerConfig.MODERATION_METADATA_ONLY.set(false);
         }
     }
 

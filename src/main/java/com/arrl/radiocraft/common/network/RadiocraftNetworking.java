@@ -22,6 +22,11 @@ public class RadiocraftNetworking {
     //For consistency, this should probably be it's own class in init, but since there doesn't seem to be an available differedRegistry for this anyways, I'll forgo the clutter
     public static void register(PayloadRegistrar registrar) {
         registrar.playToServer(SHandheldRadioUpdatePacket.TYPE, SHandheldRadioUpdatePacket.STREAM_CODEC, SHandheldRadioUpdatePacket::handle);
+        registrar.playToServer(com.arrl.radiocraft.common.network.serverbound.SHandheldDtmfPacket.TYPE, com.arrl.radiocraft.common.network.serverbound.SHandheldDtmfPacket.STREAM_CODEC, com.arrl.radiocraft.common.network.serverbound.SHandheldDtmfPacket::handle);
+        registrar.playToServer(com.arrl.radiocraft.common.network.serverbound.SHandheldMemoryPacket.TYPE, com.arrl.radiocraft.common.network.serverbound.SHandheldMemoryPacket.STREAM_CODEC, com.arrl.radiocraft.common.network.serverbound.SHandheldMemoryPacket::handle);
+        registrar.playToServer(com.arrl.radiocraft.common.network.serverbound.SHandheldAprsPacket.TYPE, com.arrl.radiocraft.common.network.serverbound.SHandheldAprsPacket.STREAM_CODEC, com.arrl.radiocraft.common.network.serverbound.SHandheldAprsPacket::handle);
+        registrar.playToServer(com.arrl.radiocraft.common.network.serverbound.SHandheldAprsSettingsPacket.TYPE, com.arrl.radiocraft.common.network.serverbound.SHandheldAprsSettingsPacket.STREAM_CODEC, com.arrl.radiocraft.common.network.serverbound.SHandheldAprsSettingsPacket::handle);
+        registrar.playToServer(com.arrl.radiocraft.common.network.serverbound.SRadioScrollTunePacket.TYPE, com.arrl.radiocraft.common.network.serverbound.SRadioScrollTunePacket.STREAM_CODEC, com.arrl.radiocraft.common.network.serverbound.SRadioScrollTunePacket::handle);
         registrar.playToServer(SBlockRadioControlPacket.TYPE, SBlockRadioControlPacket.STREAM_CODEC, SBlockRadioControlPacket::handle);
         registrar.playToClient(CWireEndPosUpdatePacket.TYPE, CWireEndPosUpdatePacket.STREAM_CODEC, CWireEndPosUpdatePacket::handle);
         registrar.playToClient(CNoisePacket.TYPE, CNoisePacket.STREAM_CODEC, CNoisePacket::handle);
@@ -35,6 +40,7 @@ public class RadiocraftNetworking {
         registrar.playToClient(CInterferencePacket.TYPE, CInterferencePacket.STREAM_CODEC, CInterferencePacket::handle);
         registrar.playToServer(SRepeaterSettingsPacket.TYPE, SRepeaterSettingsPacket.STREAM_CODEC, SRepeaterSettingsPacket::handle);
         registrar.playToServer(SStationPacket.TYPE, SStationPacket.STREAM_CODEC, SStationPacket::handle);
+        registrar.playToClient(com.arrl.radiocraft.common.network.clientbound.CModerationPacket.TYPE, com.arrl.radiocraft.common.network.clientbound.CModerationPacket.STREAM_CODEC, com.arrl.radiocraft.common.network.clientbound.CModerationPacket::handle);
         registrar.playToServer(com.arrl.radiocraft.common.network.serverbound.SManpackPacket.TYPE, com.arrl.radiocraft.common.network.serverbound.SManpackPacket.STREAM_CODEC, com.arrl.radiocraft.common.network.serverbound.SManpackPacket::handle);
         registrar.playToServer(com.arrl.radiocraft.common.network.serverbound.SManpackCWPacket.TYPE, com.arrl.radiocraft.common.network.serverbound.SManpackCWPacket.STREAM_CODEC, com.arrl.radiocraft.common.network.serverbound.SManpackCWPacket::handle);
         registrar.playToClient(com.arrl.radiocraft.common.network.clientbound.CManpackPacket.TYPE, com.arrl.radiocraft.common.network.clientbound.CManpackPacket.STREAM_CODEC, com.arrl.radiocraft.common.network.clientbound.CManpackPacket::handle);

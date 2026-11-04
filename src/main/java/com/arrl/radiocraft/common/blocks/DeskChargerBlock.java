@@ -244,6 +244,12 @@ public class DeskChargerBlock extends BaseEntityBlock {
 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
+        // Sneaking with an empty hand takes the radio out, as with the mod's other cradles (a handheld goes in from its use, VHFHandheldItem#useOn).
+        if (player.isSecondaryUseActive() && level.getBlockEntity(pos) instanceof DeskChargerBlockEntity charger && charger.hasRadio()) {
+            if (!level.isClientSide)
+                charger.takeRadio(player);
+            return InteractionResult.sidedSuccess(level.isClientSide);
+        }
         if (!level.isClientSide && player instanceof ServerPlayer serverPlayer) {
             serverPlayer.openMenu(state.getMenuProvider(level, pos), pos);
         }

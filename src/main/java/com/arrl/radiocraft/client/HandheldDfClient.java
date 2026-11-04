@@ -78,7 +78,7 @@ public final class HandheldDfClient {
 		if(++sinceBeep >= beepGap(alignment)) {
 			sinceBeep = 0;
 			litTicks = LIT_TICKS;
-			float volume = 0.25F + 0.5F * strength;
+			float volume = 0.08F + 0.17F * strength; // Soft (maintainer, 2026-11-04): a third of what it was.
 			mc.level.playLocalSound(player.getX(), player.getY(), player.getZ(), SoundEvents.NOTE_BLOCK_BIT.value(), SoundSource.PLAYERS,
 					volume, 1.2F + 0.6F * (float)alignment, false);
 		}

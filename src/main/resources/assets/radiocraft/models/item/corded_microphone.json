@@ -1,3 +1,20 @@
 {
-  "parent": "radiocraft:item/hand_microphone"
+  "loader": "neoforge:separate_transforms",
+  "base": {
+    "parent": "radiocraft:item/hand_microphone_3d"
+  },
+  "perspectives": {
+    "gui": {
+      "parent": "item/handheld",
+      "textures": {
+        "layer0": "radiocraft:item/hand_microphone"
+      }
+    },
+    "fixed": {
+      "parent": "item/handheld",
+      "textures": {
+        "layer0": "radiocraft:item/hand_microphone"
+      }
+    }
+  }
 }

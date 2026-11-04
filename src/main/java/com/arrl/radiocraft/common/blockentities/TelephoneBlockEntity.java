@@ -56,7 +56,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * While a call is up, voices near either phone come out of the other at phone quality ({@link #PHONE_QUALITY}):
  * fuller than SSB, and clean, as the link is digital.
  */
-public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectProvider, MenuProvider, IVoiceTransmitter {
+public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectProvider, MenuProvider, IVoiceTransmitter, com.arrl.radiocraft.common.items.TelephoneHandsetItem.Owner {
 
 	/** A landline's voice band (300-3400 Hz), lightly compressed, no noise: fuller than SSB's 300-2700. */
 	public static final RadioVoiceProcessor.Settings PHONE_QUALITY = new RadioVoiceProcessor.Settings(300.0D, 3400.0D, 1.2D, true);
@@ -137,6 +137,12 @@ public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectP
 
 	/** It has just started ringing. */
 	protected void onRung() {}
+
+	/** The other phone while a call is up, else null. Safe on the voice thread. */
+	@Nullable
+	protected TelephoneBlockEntity callPartner() {
+		return state == State.IN_CALL ? partnerPhone : null;
+	}
 
 	public static Collection<TelephoneBlockEntity> loaded(Level level) {
 		Map<BlockPos, TelephoneBlockEntity> map = LOADED.get(level.dimension());
@@ -311,12 +317,14 @@ public class TelephoneBlockEntity extends BlockEntity implements INetworkObjectP
 
 	/** The player who has the handset up, null while it is on its cradle (synced, for drawing the cord). */
 	@Nullable
+	@Override
 	public UUID getHandsetHolder() {
 		return handsetHolder;
 	}
 
 	/** Which pick-up the handset out now is, null while it is on its cradle. */
 	@Nullable
+	@Override
 	public UUID getHandsetId() {
 		return handsetId;
 	}

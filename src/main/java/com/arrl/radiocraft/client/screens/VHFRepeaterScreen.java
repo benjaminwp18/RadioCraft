@@ -90,7 +90,7 @@ public class VHFRepeaterScreen extends AbstractContainerScreen<VHFRepeaterMenu> 
 	// -------------------- FACE --------------------
 
 	private void initFace() {
-		toggle(18, 29, 0, 0, menu::isPowered, () -> SBlockRadioControlPacket.updateServer(repeater().getBlockPos(), SBlockRadioControlPacket.Action.TOGGLE_POWER, true));
+		toggle(18, 29, 0, 0, menu::isPowered, () -> SBlockRadioControlPacket.updateServer(repeater().getBlockPos(), SBlockRadioControlPacket.Action.TOGGLE_POWER, true)).withPowerClick();
 		toggle(41, 29, 0, 42, () -> false, () -> open(Panel.RX_FREQ));
 		toggle(64, 29, 0, 84, () -> false, () -> open(Panel.TX_FREQ));
 		toggle(18, 50, 0, 126, () -> !repeater().getCallsign().isEmpty(), () -> open(Panel.CALLSIGN));
@@ -110,10 +110,11 @@ public class VHFRepeaterScreen extends AbstractContainerScreen<VHFRepeaterMenu> 
 				d -> stepFrequency("txFrequency", repeater().getTxFrequency(), 1), d -> stepFrequency("txFrequency", repeater().getTxFrequency(), -1)));
 	}
 
-	private void toggle(int x, int y, int u, int v, Supplier<Boolean> state, Runnable onPress) {
+	private ToggleButton toggle(int x, int y, int u, int v, Supplier<Boolean> state, Runnable onPress) {
 		ToggleButton button = addRenderableWidget(new ToggleButton(state.get(), leftPos + x, topPos + y, 20, 21, u, v, WIDGETS_TEXTURE, 256, 256, b -> onPress.run()));
 		toggles.add(button);
 		toggleStates.add(state);
+		return button;
 	}
 
 	private void open(Panel which) {

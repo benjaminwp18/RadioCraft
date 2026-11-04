@@ -74,6 +74,19 @@ public class VHFHandheldItem extends Item {
         return super.use(level, player, hand);
     }
 
+    /** Sneak and use on a desk charger: the handheld goes into its cradle (swapping out one already there). */
+    @Override
+    public @NotNull net.minecraft.world.InteractionResult useOn(@NotNull net.minecraft.world.item.context.UseOnContext context) {
+        Player player = context.getPlayer();
+        if (player != null && player.isSecondaryUseActive()
+                && context.getLevel().getBlockEntity(context.getClickedPos()) instanceof com.arrl.radiocraft.common.blockentities.DeskChargerBlockEntity charger) {
+            if (!context.getLevel().isClientSide)
+                charger.dock(player, context.getHand());
+            return net.minecraft.world.InteractionResult.sidedSuccess(context.getLevel().isClientSide);
+        }
+        return super.useOn(context);
+    }
+
     /**
      * Called when this radio (in cursor) is clicked on another item in a slot.
      * Handles battery swap when clicking on a Small Battery.
@@ -175,7 +188,7 @@ public class VHFHandheldItem extends Item {
      * The rate is usually under 1 FE a tick, so it is spread over ticks: this tick takes the whole FE the running total
      * has crossed since the last one (0 most ticks, 1 now and then).
      */
-    private static int calculateEnergyConsumption(IVHFHandheldCapability cap, long gameTime) {
+    public static int calculateEnergyConsumption(IVHFHandheldCapability cap, long gameTime) {
         int lifetimeTicks = cap.isPTTDown() ? 48000 : cap.getReceiveStrength() > 0 ? 144000 : 288000;
         return spreadDrain((double)CommonConfig.SMALL_BATTERY_CAPACITY.get() / lifetimeTicks, gameTime);
     }
@@ -230,6 +243,8 @@ public class VHFHandheldItem extends Item {
         }
         
         tooltipComponents.add(Component.translatable("tooltip.radiocraft.vhf_handheld_battery_swap"));
+        if(stack.has(com.arrl.radiocraft.common.init.RadiocraftDataComponent.HANDHELD_APRS.value()))
+            tooltipComponents.add(Component.translatable("tooltip.radiocraft.vhf_handheld_aprs").withStyle(ChatFormatting.AQUA));
         if(crystal != CrystalQuality.GOOD)
             tooltipComponents.add(Component.translatable(Radiocraft.translationKey("tooltip", "crystal_" + crystal.getId())).withStyle(ChatFormatting.GRAY));
     }

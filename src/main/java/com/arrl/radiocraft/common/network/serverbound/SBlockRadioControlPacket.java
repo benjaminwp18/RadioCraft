@@ -63,6 +63,10 @@ public record SBlockRadioControlPacket(long pos, int actionId, int stepCount, bo
                 return;
 
             Action action = Action.values()[actionId];
+            if(action == Action.SET_PTT) // A screen's PTT press, and whether it is allowed (logs/debug.log).
+                com.arrl.radiocraft.Radiocraft.LOGGER.debug("[ptt-debug] SET_PTT {} at {}: allowed={} menu={} menuBE==radio={}", value, targetPos.toShortString(),
+                        canControl(context, radio, targetPos, action), context.player().containerMenu.getClass().getSimpleName(),
+                        context.player().containerMenu instanceof com.arrl.radiocraft.common.menus.RadioMenu<?> m && m.blockEntity == radio);
             if(!canControl(context, radio, targetPos, action))
                 return;
 

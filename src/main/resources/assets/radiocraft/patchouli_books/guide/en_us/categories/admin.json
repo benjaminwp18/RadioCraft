@@ -1,0 +1,6 @@
+{
+  "name": "Server Admins",
+  "description": "Tools for running a server: the Radio Moderation Computer and the moderation log behind it.",
+  "icon": "radiocraft:moderation_computer",
+  "sortnum": 12
+}

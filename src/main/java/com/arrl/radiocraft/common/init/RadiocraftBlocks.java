@@ -76,6 +76,9 @@ public class RadiocraftBlocks {
 	/** Not craftable: found at repeater sites. */
 	public static final DeferredHolder<Block, com.arrl.radiocraft.common.blocks.radios.CommercialRepeaterBlock> COMMERCIAL_REPEATER = BLOCKS.register("commercial_repeater",
 			() -> new com.arrl.radiocraft.common.blocks.radios.CommercialRepeaterBlock(Properties.ofFullCopy(Blocks.IRON_BLOCK).strength(4.0F, 8.0F).noOcclusion()));
+	/** Not craftable: the server admins' screen over the moderation log, locked to whoever placed it. */
+	public static final DeferredHolder<Block, ModerationComputerBlock> MODERATION_COMPUTER = BLOCKS.register("moderation_computer",
+			() -> new ModerationComputerBlock(Properties.ofFullCopy(Blocks.STONE).strength(2.0F, 6.0F).noOcclusion()));
 
 	public static final CrystalVariants<Block, HFRadio10mBlock> HF_RADIO_10M_VARIANTS = CrystalVariants.register(BLOCKS, "hf_radio_10m", crystal -> new HFRadio10mBlock(PROPERTIES_RADIO, crystal));
 	public static final DeferredHolder<Block, HFRadio10mBlock> HF_RADIO_10M = HF_RADIO_10M_VARIANTS.good();
@@ -91,6 +94,8 @@ public class RadiocraftBlocks {
 	public static final DeferredHolder<Block, QRPRadio20mBlock> QRP_RADIO_20M = BLOCKS.register("qrp_radio_20m", () -> new QRPRadio20mBlock(PROPERTIES_RADIO));
 	public static final DeferredHolder<Block, QRPRadio40mBlock> QRP_RADIO_40M = BLOCKS.register("qrp_radio_40m", () -> new QRPRadio40mBlock(PROPERTIES_RADIO));
 	public static final DeferredHolder<Block, RadioInterfaceBlock> RADIO_INTERFACE = BLOCKS.register("radio_interface", () -> new RadioInterfaceBlock(PROPERTIES_STONE));
+	public static final DeferredHolder<Block, com.arrl.radiocraft.common.blocks.DtmfDecoderBlock> DTMF_DECODER = BLOCKS.register("dtmf_decoder", () -> new com.arrl.radiocraft.common.blocks.DtmfDecoderBlock(PROPERTIES_RADIO));
+	public static final DeferredHolder<Block, com.arrl.radiocraft.common.blocks.DtmfEncoderBlock> DTMF_ENCODER = BLOCKS.register("dtmf_encoder", () -> new com.arrl.radiocraft.common.blocks.DtmfEncoderBlock(PROPERTIES_RADIO));
 	public static final DeferredHolder<Block, AprsTerminalBlock> APRS_TERMINAL = BLOCKS.register("aprs_h19", () -> new AprsTerminalBlock(PROPERTIES_RADIO));
 	public static final DeferredHolder<Block, ParrotControllerBlock> PARROT_CONTROLLER = BLOCKS.register("parrot_controller", () -> new ParrotControllerBlock(PROPERTIES_RADIO));
 
@@ -182,10 +187,13 @@ public class RadiocraftBlocks {
 	public static final DeferredHolder<Block, DirectionFinderBlock> MAP_DIRECTION_FINDER = BLOCKS.register("map_direction_finder", () -> new DirectionFinderBlock(PROPERTIES_RADIO, true));
 	public static final DeferredHolder<Block, com.arrl.radiocraft.common.blocks.PabxBlock> PABX = BLOCKS.register("pabx", () -> new com.arrl.radiocraft.common.blocks.PabxBlock(PROPERTIES_RADIO));
 	public static final DeferredHolder<Block, com.arrl.radiocraft.common.blocks.PhonePaBlock> PHONE_PA = BLOCKS.register("phone_pa", () -> new com.arrl.radiocraft.common.blocks.PhonePaBlock(PROPERTIES_RADIO));
+	public static final DeferredHolder<Block, com.arrl.radiocraft.common.blocks.RepeaterAutopatchBlock> REPEATER_AUTOPATCH = BLOCKS.register("repeater_autopatch", () -> new com.arrl.radiocraft.common.blocks.RepeaterAutopatchBlock(PROPERTIES_RADIO));
 	public static final DeferredHolder<Block, DirectionFinderModuleBlock> DIRECTION_FINDER_MODULE = BLOCKS.register("direction_finder_module", () -> new DirectionFinderModuleBlock(PROPERTIES_RADIO));
 
 	// Microwave links and what rides them.
 	public static final DeferredHolder<Block, MicrowaveRadioBlock> MICROWAVE_RADIO = BLOCKS.register("microwave_radio", () -> new MicrowaveRadioBlock(PROPERTIES_RADIO));
+	/** The TA-43 field phone: a party line on data wire (FieldPhoneBlockEntity). */
+	public static final DeferredHolder<Block, com.arrl.radiocraft.common.blocks.FieldPhoneBlock> FIELD_PHONE = BLOCKS.register("field_phone", () -> new com.arrl.radiocraft.common.blocks.FieldPhoneBlock(Properties.ofFullCopy(Blocks.IRON_BLOCK).strength(1.5F).noOcclusion()));
 	public static final DeferredHolder<Block, TelephoneBlock> TELEPHONE = BLOCKS.register("telephone", () -> new TelephoneBlock(Properties.ofFullCopy(Blocks.STONE).strength(1.0F).noOcclusion()));
 
 	// Weather: a mast-top station whose readings H19s nearby beacon.

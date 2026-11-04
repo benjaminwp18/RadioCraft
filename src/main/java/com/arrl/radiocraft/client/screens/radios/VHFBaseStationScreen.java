@@ -24,7 +24,7 @@ public class VHFBaseStationScreen extends VHFRadioScreen<VHFBaseStationMenu> {
 	@Override
 	protected void init() {
 		super.init();
-		addRenderableWidget(new ToggleButton(menu.isPowered(), leftPos + 7, topPos + 6, 20, 21, 0, 0, widgetsTexture, 256, 256, this::onPressPower)); // Power button
+		addRenderableWidget(new ToggleButton(menu.isPowered(), leftPos + 7, topPos + 6, 20, 21, 0, 0, widgetsTexture, 256, 256, this::onPressPower).withPowerClick()); // Power button
 		addRenderableWidget(new HoldButton(leftPos + 6, topPos + 27, 22, 22, 0, 66, widgetsTexture, 256, 256, this::onPressPTT, this::onReleasePTT)); // MIC
 		addRenderableWidget(new Dial(leftPos + 48, topPos + 59, 42, 42, 44, 0, widgetsTexture, 256, 256, this::onFrequencyDialUp, this::onFrequencyDialDown)); // Frequency dial
 		addRenderableWidget(new Dial(leftPos + 133, topPos + 69, 28, 31, 74, 84, widgetsTexture, 256, 256, d -> stepTone(1), d -> stepTone(-1))); // Dial1: CTCSS tone

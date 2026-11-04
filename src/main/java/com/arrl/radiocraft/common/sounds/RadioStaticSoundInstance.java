@@ -32,7 +32,8 @@ public class RadioStaticSoundInstance extends AbstractTickableSoundInstance {
 	 * up past full, which Minecraft hears as full volume carried further (16 blocks per unit of volume).
 	 */
 	public RadioStaticSoundInstance(RadioBlockEntity radio, @org.jetbrains.annotations.Nullable com.arrl.radiocraft.common.radio.BEVoiceReceiver.WiredSpeaker speaker) {
-		super(RadiocraftSoundEvents.STATIC.get(), SoundSource.VOICE, SoundInstance.createUnseededRandom());
+		// An FM-only radio roars with FM static (a blown one keyed; its squelched hiss comes through the voice path, see FmStatic).
+		super((radio instanceof com.arrl.radiocraft.common.blockentities.radio.VHFRadioBlockEntity ? RadiocraftSoundEvents.FM_STATIC : RadiocraftSoundEvents.STATIC).get(), SoundSource.VOICE, SoundInstance.createUnseededRandom());
 		this.radio = radio;
 		this.speaker = speaker;
 		this.looping = true;

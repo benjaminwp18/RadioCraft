@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": {
+      "item": "radiocraft:hf_circuit_board"
+    },
+    "C": {
+      "item": "minecraft:copper_ingot"
+    },
+    "P": {
+      "item": "minecraft:compass"
+    },
+    "W": {
+      "item": "radiocraft:wire"
+    }
+  },
+  "pattern": [
+    "WPW",
+    "CBC"
+  ],
+  "result": {
+    "count": 1,
+    "id": "radiocraft:aprs_module"
+  }
+}

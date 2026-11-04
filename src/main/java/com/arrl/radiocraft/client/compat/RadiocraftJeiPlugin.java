@@ -42,6 +42,10 @@ public class RadiocraftJeiPlugin implements IModPlugin {
 		// Every scaled panel, listed above or not, also reports where it really is, so JEI moves its list off it or
 		// hides what would land on it (2026-10-31: JEI still overlapped some).
 		registration.addGenericGuiContainerHandler(StationPanelScreen.class, new PanelArea());
+		// The DTMF screens have no slots: no item list beside them, and no JEI hotkeys taking keys typed into them.
+		registration.addGuiScreenHandler(com.arrl.radiocraft.client.screens.DtmfEncoderScreen.class, screen -> null);
+		registration.addGuiScreenHandler(com.arrl.radiocraft.client.screens.DtmfDecoderScreen.class, screen -> null);
+		registration.addGuiScreenHandler(com.arrl.radiocraft.client.screens.moderation.ModerationComputerScreen.class, screen -> null); // It fills the window.
 	}
 
 	/** The panel's rectangle on the window, scaled up as it is drawn. */

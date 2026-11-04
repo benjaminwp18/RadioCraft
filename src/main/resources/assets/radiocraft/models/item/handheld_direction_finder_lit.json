@@ -1139,14 +1139,14 @@
   {
    "name": "lamp_lit",
    "from": [
-    4.98,
+    8.98,
     8.48,
-    6.23
+    7.48
    ],
    "to": [
-    6.02,
+    10.02,
     9.02,
-    7.27
+    8.52
    ],
    "faces": {
     "north": {
@@ -1208,6 +1208,15 @@
     "block_light": 15,
     "sky_light": 15,
     "ambient_occlusion": false
+   },
+   "rotation": {
+    "angle": 0,
+    "axis": "y",
+    "origin": [
+     4,
+     0,
+     1.25
+    ]
    }
   }
  ],

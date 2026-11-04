@@ -7,8 +7,8 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.RandomSource;
 
 /**
- * A terminal's fan and transformer humming while its screen is open (the H19, the direction finder, the microwave
- * radio): spins up over a second, stops when {@link #finish} is called from the screen's {@code removed}.
+ * A terminal's fan and transformer humming while its screen is open (the direction finder, the ionospheric processor,
+ * the microwave radio; the H19 has its own, at the block, see AprsTerminalClient): spins up over a second, stops when {@link #finish} is called from the screen's {@code removed}.
  */
 public final class TerminalWhirr extends AbstractTickableSoundInstance {
 

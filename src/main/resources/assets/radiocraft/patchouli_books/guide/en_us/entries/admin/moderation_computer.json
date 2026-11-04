@@ -1,0 +1,43 @@
+{
+  "name": "Radio Moderation Computer",
+  "icon": "radiocraft:moderation_computer",
+  "category": "radiocraft:admin",
+  "sortnum": 0,
+  "pages": [
+    {
+      "type": "patchouli:spotlight",
+      "item": "radiocraft:moderation_computer",
+      "text": "For server admins, from the creative menu: it cannot be crafted. It is the screen over the $(thing)moderation log$(), which keeps who talked over the radio, who heard them and what was said, for a few days."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Turning it on",
+      "text": "Nothing is recorded until the server says so, in $(thing)radiocraft-server.toml$():$(li)$(thing)moderation_record_radio$(): voice over radios, data, CW and notes.$(li)$(thing)moderation_record_proximity$(): plain voice chat too.$(li)$(thing)moderation_retention_days$(), $(thing)moderation_storage_cap_gb$(): how long and how much.$(br2)While radio is recorded, radio screens show a small red REC and players are told as they join."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Locked",
+      "text": "Whoever places it owns it, if they are an operator. Only the owner and the admins they add can open it; anyone else is told whose it is.$(br2)The owner adds and removes admins, or hands it over, on its $(thing)Access$() tab. If the owner is gone, $(thing)/radio moderation unlock x y z$() clears the lock and the next operator to use it owns it."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Live",
+      "text": "Who is on the air right now: talker, frequency, radio, where and how many hear them. Pick one and $(thing)Listen to talker$() to hear everything they send, clean. Or pick any player and $(thing)Hear what they hear$(): every radio they hold or stand by.$(br2)The bell rings when the player you follow keys up. $(thing)Stop listening$() ends it; closing the screen does not."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Archive",
+      "text": "Past transmissions, filtered by player, words, frequency, kind, time, radio position, world, or flagged only. Pick one to see it in full on the right: talkers, every hearer with their signal strength, data and CW text.$(br2)$(thing)Play$() plays it to you over voice chat, as sent or as one hearer heard it. $(thing)Flag$() keeps it past retention; $(thing)Export$() writes Ogg Opus files to the server's moderation folder."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Map, Links, Tapes",
+      "text": "$(thing)Map$(): every radio on the air in a world, from above. Red ones sent, blue ones only heard; hover for the last talker and frequency.$(br2)$(thing)Links$(): who hears whom, as a graph and a table.$(br2)$(thing)Tapes$(): player tapes recorded or aired, by speaker, with Play.$(br2)$(thing)Proximity$(): the Live and Archive tools for plain voice chat."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Audit",
+      "text": "Every opening, listen, playback, export, flag and change of admins is written to an audit log with who and when, shown on the $(thing)Access$() tab.$(br2)Recording people's voices has legal weight in many places (two-party consent states, GDPR): servers that turn it on should say so in their rules."
+    }
+  ]
+}

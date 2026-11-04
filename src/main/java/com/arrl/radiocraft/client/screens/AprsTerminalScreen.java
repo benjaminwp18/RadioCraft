@@ -6,6 +6,7 @@ import com.arrl.radiocraft.common.blockentities.AprsTerminalBlockEntity;
 import com.arrl.radiocraft.common.blockentities.AprsTerminalBlockEntity.Heard;
 import com.arrl.radiocraft.common.blockentities.AprsTerminalBlockEntity.Logged;
 import com.arrl.radiocraft.common.blockentities.StationBus;
+import com.arrl.radiocraft.common.init.RadiocraftSoundEvents;
 import com.arrl.radiocraft.common.menus.AprsTerminalMenu;
 import com.arrl.radiocraft.common.network.serverbound.SStationPacket;
 import com.arrl.radiocraft.common.radio.data.AprsIcon;
@@ -135,7 +136,7 @@ public class AprsTerminalScreen extends StationPanelScreen<AprsTerminalMenu> {
 	private boolean editingComment = false, editingCallsign = false;
 	private String commentDraft = "", callsignDraft = "";
 
-	private enum StepKind { PRINT, FAST, TYPE, PROMPT, WAIT, SEEK, BEEP, CALLSIGN, ASK }
+	private enum StepKind { PRINT, FAST, TYPE, PROMPT, WAIT, SEEK, BEEP, BELL, CALLSIGN, ASK }
 	private record Step(StepKind kind, String text, int millis) {}
 	private final List<String> console = new ArrayList<>();
 	private final List<Step> script = new ArrayList<>();
@@ -176,24 +177,11 @@ public class AprsTerminalScreen extends StationPanelScreen<AprsTerminalMenu> {
 		return menu.blockEntity;
 	}
 
-	/** The terminal's fan and transformer, humming quietly while the screen is open. */
-	@org.jetbrains.annotations.Nullable
-	private TerminalWhirr whirr;
-
-	@Override
-	protected void init() {
-		super.init();
-		if(whirr == null)
-			whirr = TerminalWhirr.start(0.12F);
-	}
+	// Its fan and flyback run at the block while it has power, screen open or not (AprsTerminalClient).
 
 	@Override
 	public void removed() {
 		super.removed();
-		if(whirr != null) {
-			whirr.finish();
-			whirr = null;
-		}
 		if(map != null) {
 			map.close();
 			map = null;
@@ -407,7 +395,7 @@ public class AprsTerminalScreen extends StationPanelScreen<AprsTerminalMenu> {
 		step = stepChars = 0;
 		stepAt = System.currentTimeMillis();
 		add(StepKind.WAIT, "", 350);
-		add(StepKind.BEEP, "", 0);
+		add(StepKind.BELL, "", 0);
 		add(StepKind.PRINT, "HEATH H-19 VIDEO TERMINAL    ROM V1.4    (C) 1979", 0);
 		add(StepKind.PRINT, "MEMORY TEST .......... 64K OK", 0);
 		add(StepKind.PRINT, "SERIAL PORT A ........ 1200 BAUD 8N1", 0);
@@ -494,6 +482,7 @@ public class AprsTerminalScreen extends StationPanelScreen<AprsTerminalMenu> {
 						return;
 				}
 				case BEEP -> beep();
+				case BELL -> bell();
 				case CALLSIGN -> { // Decided when it gets here: the callsign may have arrived since the boot began.
 					String have = callsign();
 					if(!have.isEmpty())
@@ -974,13 +963,19 @@ public class AprsTerminalScreen extends StationPanelScreen<AprsTerminalMenu> {
 			minecraft.getSoundManager().play(SimpleSoundInstance.forUI(sound, pitch, volume));
 	}
 
-	/** Printing: a soft tick. */
+	/** Printing: the keyboard's click, much quieter, as characters come up on the screen. */
 	private void printTick() {
-		play(SoundEvents.NOTE_BLOCK_HAT.value(), 1.7F + random.nextFloat() * 0.3F, 0.05F);
+		play(RadiocraftSoundEvents.H19_TYPE.get(), 1.05F + random.nextFloat() * 0.15F, 0.06F);
 	}
 
+	/** A key of the H19's keyboard (S0lver's recording). */
 	private void keyClick() {
-		play(SoundEvents.NOTE_BLOCK_HAT.value(), 1.75F + random.nextFloat() * 0.2F, 0.08F);
+		play(RadiocraftSoundEvents.H19_TYPE.get(), 0.95F + random.nextFloat() * 0.1F, 0.6F);
+	}
+
+	/** The H19's own bell (S0lver's recording), as it boots. */
+	private void bell() {
+		play(RadiocraftSoundEvents.H19_BELL.get(), 1.0F, 0.6F);
 	}
 
 	/** The drive head stepping: the printing's tick, a little lower. */
@@ -1408,6 +1403,9 @@ public class AprsTerminalScreen extends StationPanelScreen<AprsTerminalMenu> {
 			String line = value.isEmpty() ? SETUP_ITEMS[i] : dots(SETUP_ITEMS[i], SETUP_LABEL) + ": " + value;
 			spot(SETUP_TOP + i * 2, 1, line, i == setupSel && !isTyping() ? INVERSE : NORMAL, () -> setupAction(item));
 		}
+		// Tucked in the corner, dim: S0lver recorded the H19's whirr, keys and bell (2026-11-04). Click it for the bell.
+		String credit = "SOUNDS BY S0LVER";
+		spot(SETUP_TOP + SETUP_ITEMS.length * 2 - 1, COLS - credit.length() - 1, credit, FAINT, this::bell);
 		if(editingComment)
 			cursor(SETUP_TOP + SETUP_COMMENT * 2, 1 + SETUP_LABEL + 3 + commentDraft.length(), now);
 		if(editingCallsign)

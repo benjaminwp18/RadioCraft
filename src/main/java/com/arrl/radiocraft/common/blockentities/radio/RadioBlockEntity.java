@@ -1,6 +1,7 @@
 package com.arrl.radiocraft.common.blockentities.radio;
 
 import com.arrl.radiocraft.common.radio.voice.RadioModeration;
+import com.arrl.radiocraft.common.moderation.ModerationHooks;
 import com.arrl.radiocraft.RadiocraftServerConfig;
 import com.arrl.radiocraft.api.benetworks.BENetworkObject;
 import com.arrl.radiocraft.api.benetworks.INetworkObjectProvider;
@@ -236,6 +237,7 @@ public abstract class RadioBlockEntity extends BlockEntity implements ITogglable
                 be.tickDeskMic(serverLevel);
                 be.tickMeter(serverLevel);
                 be.tickData(serverLevel, powered);
+                be.tickDtmf(serverLevel, powered);
                 if((serverLevel.getGameTime() + pos.asLong()) % 20L == 0L) // Speakers come and go rarely: once a second is plenty.
                     be.refreshSpeakers(serverLevel);
             }
@@ -330,9 +332,84 @@ public abstract class RadioBlockEntity extends BlockEntity implements ITogglable
         return level != null && getNetworkObject(level, worldPosition) instanceof RadioNetworkObject networkObject && networkObject.isPowered;
     }
 
-    /** True while a packet burst is going out or waiting to. */
+    /** True while a packet burst or DTMF tones are going out or waiting to. */
     public boolean isSendingData() {
-        return sendingData != null || !dataQueue.isEmpty();
+        return sendingData != null || !dataQueue.isEmpty() || !dtmfFrames.isEmpty();
+    }
+
+    // -------------------- DTMF --------------------
+
+    private final ArrayDeque<short[]> dtmfFrames = new ArrayDeque<>(); // Server thread only.
+    private UUID dtmfVoiceId = null;
+    private final com.arrl.radiocraft.common.radio.voice.DtmfListener dtmfListener = new com.arrl.radiocraft.common.radio.voice.DtmfListener();
+    /** True while a DTMF decoder (or autopatch, {@link com.arrl.radiocraft.common.blockentities.DtmfKeyReceiver}) is linked: only then does it look for key tones in what it hears. */
+    private volatile boolean dtmfDecoderLinked = false;
+
+    /**
+     * Sends {@code digits} as DTMF tones, from a DTMF encoder: on the radio's transmit frequency with its CTCSS tone,
+     * like its voice, so a repeater passes them on. Nothing goes out from a receiver or a radio that is off.
+     *
+     * @return True if the tones will go out.
+     */
+    public boolean sendDtmf(String digits) {
+        String keys = com.arrl.radiocraft.common.radio.voice.Dtmf.sanitize(digits);
+        if(keys.isEmpty() || !hasTransmitter() || isBlown() || !isPowered())
+            return false;
+        dtmfFrames.addAll(com.arrl.radiocraft.common.radio.voice.Dtmf.frames(keys));
+        ModerationHooks.dtmfQueued(this, keys);
+        return true;
+    }
+
+    /** True while DTMF tones are going out or waiting to. */
+    public boolean isSendingDtmf() {
+        return !dtmfFrames.isEmpty();
+    }
+
+    /** False for receivers: they have nothing to send DTMF (or anything) with. */
+    public boolean hasTransmitter() {
+        return true;
+    }
+
+    /** Plays the DTMF tones in hand out frame by frame, 2.5 frames of 20 ms per tick like data. */
+    private void tickDtmfFrames(ServerLevel serverLevel) {
+        if(dtmfVoiceId == null)
+            dtmfVoiceId = UUID.nameUUIDFromBytes(("radiocraft-dtmf-" + worldPosition.asLong()).getBytes(StandardCharsets.UTF_8));
+        int frames = serverLevel.getGameTime() % 2 == 0 ? 3 : 2;
+        ModerationHooks.Tag was = ModerationHooks.push(ModerationHooks.Tag.dtmf(this));
+        try {
+            for(int i = 0; i < frames && !dtmfFrames.isEmpty(); i++) {
+                transmitVoice(() -> serverLevel, dtmfFrames.poll(), (float)(getTransmitFrequency() + getDriftHz()), dtmfVoiceId, getTransmitTone());
+                recordTransmit();
+            }
+        }
+        finally {
+            ModerationHooks.pop(was);
+        }
+    }
+
+    /**
+     * Keeps track of whether a DTMF decoder is linked (touching, or on the data wire), and hands it the keys copied
+     * from what the radio received.
+     */
+    private void tickDtmf(ServerLevel serverLevel, boolean powered) {
+        long now = serverLevel.getGameTime();
+        if((now + worldPosition.asLong()) % 10L == 0L)
+            dtmfDecoderLinked = !com.arrl.radiocraft.common.be_networks.DataWire.linked(serverLevel, worldPosition, com.arrl.radiocraft.common.blockentities.DtmfKeyReceiver.class).isEmpty();
+        if(!dtmfDecoderLinked || !powered) {
+            dtmfListener.clear();
+            return;
+        }
+        List<Character> keys = dtmfListener.drain(now);
+        if(keys.isEmpty())
+            return;
+        for(com.arrl.radiocraft.common.blockentities.DtmfKeyReceiver decoder : com.arrl.radiocraft.common.be_networks.DataWire.linked(serverLevel, worldPosition, com.arrl.radiocraft.common.blockentities.DtmfKeyReceiver.class))
+            for(char key : keys)
+                decoder.receiveDtmf(this, key);
+    }
+
+    /** The key a DTMF decoder follows a station by: who is talking, or for tones a block sent, its antenna. */
+    private static Object dtmfSource(AntennaVoicePacket packet) {
+        return packet.getSourcePlayer() != null ? packet.getSourcePlayer() : packet.getSource();
     }
 
     /** The client's copy of {@link #isSendingData()}, for the TX lamp. */
@@ -359,6 +436,11 @@ public abstract class RadioBlockEntity extends BlockEntity implements ITogglable
         if(!powered) {
             dataQueue.clear();
             sendingData = null;
+            dtmfFrames.clear();
+            return;
+        }
+        if(sendingData == null && !dtmfFrames.isEmpty()) { // DTMF waits for a packet already going out, then goes first.
+            tickDtmfFrames(serverLevel);
             return;
         }
         if(sendingData == null) {
@@ -387,7 +469,7 @@ public abstract class RadioBlockEntity extends BlockEntity implements ITogglable
             dataFrame = 0;
         }
         if(dataVoiceId == null)
-            dataVoiceId = UUID.nameUUIDFromBytes(("radiocraft-tnc-" + worldPosition.asLong()).getBytes(StandardCharsets.UTF_8));
+            dataVoiceId = Afsk.markDataSource(UUID.nameUUIDFromBytes(("radiocraft-tnc-" + worldPosition.asLong()).getBytes(StandardCharsets.UTF_8)));
         int frames = serverLevel.getGameTime() % 2 == 0 ? 3 : 2;
         for(int i = 0; i < frames && dataFrame < dataFrames.size(); i++) {
             transmitVoice(() -> serverLevel, dataFrames.get(dataFrame++), getTunedFrequency(), dataVoiceId, 0.0F);
@@ -414,14 +496,18 @@ public abstract class RadioBlockEntity extends BlockEntity implements ITogglable
             return;
         RadioModeration.data(serverLevel, packet, getTunedFrequency()); // Operators reading along (/radio moderateall).
         List<AntennaNetworkObject> antennas = networkObject.getAntennas();
-        if(antennas.size() == 1)
+        if(antennas.size() == 1) {
+            ModerationHooks.data(antennas.get(0).getAntenna(), this, serverLevel, packet, getTunedFrequency(), band, null);
             antennas.get(0).transmitDataPacket(serverLevel, packet, band, getTunedFrequency());
+        }
         else if(antennas.size() > 1)
             overdraw();
         else {
             BareConnectorAntenna bare = bareConnector;
-            if(bare != null)
+            if(bare != null) {
+                ModerationHooks.data(bare, this, serverLevel, packet, getTunedFrequency(), band, null);
                 bare.transmitDataPacket(serverLevel, packet, band, getTunedFrequency());
+            }
         }
     }
 
@@ -436,7 +522,7 @@ public abstract class RadioBlockEntity extends BlockEntity implements ITogglable
     public boolean receiveData(AntennaDataPacket packet) {
         if(!(level instanceof ServerLevel serverLevel) || !(getNetworkObject(level, worldPosition) instanceof RadioNetworkObject networkObject) || !networkObject.isPowered)
             return false;
-        if(isTransmittingNow(serverLevel) || sendingData != null)
+        if(isDeafNow())
             return false;
         Detuning.Effect effect = getDetuning(packet.getFrequency());
         if(!effect.audible() || effect.pitchShiftHz() != 0.0D || effect.splatter() > 0.0D)
@@ -463,6 +549,7 @@ public abstract class RadioBlockEntity extends BlockEntity implements ITogglable
                 && level.getRandom().nextDouble() < com.arrl.radiocraft.common.radio.data.FaxRates.lossChance(strength, noise))
             return false;
         recordSignal(strength);
+        ModerationHooks.heard(packet, this, level, worldPosition, null, strength); // A hearer of the logged transmission.
         for(RadioInterfaceBlockEntity radioInterface : getRadioInterfaces())
             radioInterface.receive(this, payload);
         // Teletypes, fax machines and WEFAX receivers have their own modems and take packets straight from the radio:
@@ -599,6 +686,22 @@ public abstract class RadioBlockEntity extends BlockEntity implements ITogglable
             TransmitInterference.stop(serverLevel, transmitTargets);
             transmitTargets = null;
         }
+    }
+
+    /**
+     * True while the radio's own transmitter has the antenna (voice, morse, data or DTMF going out): a transceiver hears
+     * nothing then. Repeaters, which listen on one frequency while sending on another, say so in
+     * {@link #hearsWhileTransmitting()}. Read on the voice chat thread too.
+     */
+    public boolean isDeafNow() {
+        if(hearsWhileTransmitting() || !(level instanceof ServerLevel serverLevel))
+            return false;
+        return isTransmittingNow(serverLevel) || sendingData != null || !dtmfFrames.isEmpty();
+    }
+
+    /** False for a transceiver: it cannot hear while it transmits. True for a repeater. */
+    protected boolean hearsWhileTransmitting() {
+        return false;
     }
 
     /** True while RF is going out: PTT held in SSB, or morse keyed within the last couple of ticks. A blown radio sends nothing. */
@@ -918,11 +1021,17 @@ public abstract class RadioBlockEntity extends BlockEntity implements ITogglable
     protected void tickParrot(ServerLevel serverLevel) {
         long now = serverLevel.getGameTime();
         boolean echoed = false;
-        for(QueuedVoice next = parrotVoiceQueue.peek(); next != null && next.dueTick() <= now; next = parrotVoiceQueue.peek()) {
-            parrotVoiceQueue.poll();
-            acceptVoicePacket(() -> serverLevel, next.audio(), next.sourcePlayer());
-            recordParrotEcho(serverLevel);
-            echoed = true;
+        ModerationHooks.Tag was = ModerationHooks.push(ModerationHooks.Tag.PARROT); // An echo: the original was logged at its source.
+        try {
+            for(QueuedVoice next = parrotVoiceQueue.peek(); next != null && next.dueTick() <= now; next = parrotVoiceQueue.peek()) {
+                parrotVoiceQueue.poll();
+                acceptVoicePacket(() -> serverLevel, next.audio(), next.sourcePlayer());
+                recordParrotEcho(serverLevel);
+                echoed = true;
+            }
+        }
+        finally {
+            ModerationHooks.pop(was);
         }
         if(echoed)
             parrotBeepPending = true;
@@ -936,9 +1045,15 @@ public abstract class RadioBlockEntity extends BlockEntity implements ITogglable
         if(parrotVoiceId == null)
             parrotVoiceId = UUID.nameUUIDFromBytes(("radiocraft-parrot-" + worldPosition.asLong()).getBytes(StandardCharsets.UTF_8));
         int frames = now % 2 == 0 ? 3 : 2; // 2.5 frames of 20 ms per 50 ms tick.
-        for(int i = 0; i < frames && !parrotBeep.isEmpty(); i++) {
-            acceptVoicePacket(() -> serverLevel, parrotBeep.poll(), parrotVoiceId);
-            recordParrotEcho(serverLevel);
+        ModerationHooks.Tag beep = ModerationHooks.push(ModerationHooks.Tag.SKIP); // Its courtesy beep is not worth a line.
+        try {
+            for(int i = 0; i < frames && !parrotBeep.isEmpty(); i++) {
+                acceptVoicePacket(() -> serverLevel, parrotBeep.poll(), parrotVoiceId);
+                recordParrotEcho(serverLevel);
+            }
+        }
+        finally {
+            ModerationHooks.pop(beep);
         }
     }
 
@@ -1031,7 +1146,7 @@ public abstract class RadioBlockEntity extends BlockEntity implements ITogglable
      */
     public boolean receiveVoice(AntennaVoicePacket packet) {
         Detuning.Effect effect = getDetuning(packet.getFrequency());
-        if(effect.isNone())
+        if(effect.isNone() || isDeafNow())
             return false;
         boolean skip = isSkipPath(packet);
         double strength = packet.getStrength() * desense(packet);
@@ -1052,11 +1167,17 @@ public abstract class RadioBlockEntity extends BlockEntity implements ITogglable
             return false; // Tone squelch: not our tone, the speaker stays quiet.
         strength *= effect.strength();
         recordSignal(strength);
+        ModerationHooks.heard(packet, this, level, worldPosition, null, strength); // A hearer of the logged transmission.
         if(isParrot()) // Queue the audio as it arrived, before the receiver scales it, so the echo carries one path's loss, not two.
             parrotVoiceQueue.add(new QueuedVoice(packet.getRawAudio().clone(), packet.getSourcePlayer(), lastSignalGameTime + parrotDelayTicks));
         double rasp = skip && band != null && band.isVhf() ? 1.0D : 0.0D; // A VHF signal beyond line of sight came off the aurora.
         if(!skip && band != null && !band.isVhf())
             rasp = blackoutDistortion(); // Local HF in a blackout gets through, but rough.
+        // A DTMF decoder listens to the receiver's audio, before the speaker's processing changes it in place. Tones
+        // pitched off by a detuned SSB receiver are no longer the keys' tones.
+        if(dtmfDecoderLinked && this.level != null && Math.abs(effect.pitchShiftHz()) <= com.arrl.radiocraft.common.radio.voice.Dtmf.MAX_PITCH_SHIFT_HZ)
+            dtmfListener.frame(dtmfSource(packet), packet.getRawAudio(), strength / copyThreshold(getNoiseFloor(skip)), rasp,
+                    Math.max(effect.splatter(), Detuning.splatterOn(1.0D, getAdjacentQrm(), strength)), this.level.getGameTime());
         // FM holds its volume as the signal fades and gets noisier instead; SSB sinks into the noise.
         double level = isFM() ? speakerGain : ReceiverMix.voiceLevel(strength, getNoiseFloor(skip)) * speakerGain;
         double blocks = packet.getSource() == null || packet.getSource().getAntennaPos() == null ? Double.MAX_VALUE
@@ -1333,6 +1454,9 @@ public abstract class RadioBlockEntity extends BlockEntity implements ITogglable
             isPTTDown = value;
             updateIsReceiving();
             updateBlock();
+            if(level != null && !level.isClientSide) // For "keys up but nobody hears it" reports (logs/debug.log).
+                com.arrl.radiocraft.Radiocraft.LOGGER.debug("[ptt-debug] radio {} ptt={} ssb={} powered={} blown={} canTransmitVoice={} micPos={}", worldPosition.toShortString(),
+                        isPTTDown, ssbEnabled, isPowered(), isBlown(), canTransmitVoice(), getPos());
         }
     }
 
@@ -1400,14 +1524,19 @@ public abstract class RadioBlockEntity extends BlockEntity implements ITogglable
             return;
         RadioModeration.voice(level, sourcePlayer, rawAudio, txHz); // Operators listening in (/radio moderateall).
         List<AntennaNetworkObject> antennas = networkObject.getAntennas();
-        if(antennas.size() == 1)
-            antennas.get(0).transmitAudioPacket(level, rawAudio, band, txHz, sourcePlayer, ctcssTone, transmitPower());
+        if(antennas.size() == 1) {
+            AntennaNetworkObject antenna = antennas.get(0);
+            ModerationHooks.voice(antenna.getAntenna(), this, this.level, sourcePlayer, rawAudio, txHz, band, ctcssTone); // The moderation log (logged once, here at the source).
+            antenna.transmitAudioPacket(level, rawAudio, band, txHz, sourcePlayer, ctcssTone, transmitPower());
+        }
         else if(antennas.size() > 1)
             overdraw();
         else {
             BareConnectorAntenna bare = bareConnector;
-            if(bare != null)
+            if(bare != null) {
+                ModerationHooks.voice(bare, this, this.level, sourcePlayer, rawAudio, txHz, band, ctcssTone);
                 bare.transmitAudioPacket(level, rawAudio, band, txHz, sourcePlayer, ctcssTone);
+            }
         }
     }
 

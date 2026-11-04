@@ -201,7 +201,11 @@ public class CommercialStations extends SavedData {
 			List<short[]> frames = on.program().frames(now, now % 2 == 0 ? 3 : 2);
 			if(frames.isEmpty())
 				continue;
+			// A note for the moderation log (what played, where), kept if someone heard it.
+			com.arrl.radiocraft.common.moderation.ModerationHooks.commercial(on.antenna(), level, station.pos(), station.kind().name().toLowerCase(java.util.Locale.ROOT),
+					station.callsign(), station.frequency(), band);
 			on.antenna().transmitAudioFrames(() -> level, frames, band, station.frequency(), on.voiceId());
+			com.arrl.radiocraft.common.radio.voice.RadioModeration.broadcast(level, on.voiceId(), frames, station.frequency()); // A moderator tuned in.
 			sending.add(station.pos());
 		}
 		if(now % 20 == 0)

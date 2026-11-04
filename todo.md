@@ -180,8 +180,12 @@ In order. Each step gets GameTests where the server side can be checked; audio s
 Models and textures we want drawn by someone else are listed in [doc/ModelDesignBounty.md](doc/ModelDesignBounty.md).
 
 ### VHF/UHF Channel and Repeater Features
-- [ ] DTMF redstone controller (maintainer, 2026-10-24): a block beside a radio that listens for DTMF tone codes on
-  its frequency and drives redstone outputs (remote switching, repeater control)
+- [x] DTMF (maintainer, 2026-10-24 and 2026-11-04): real Q.23 dual tones as audio, decoded by Goertzel at the
+  receiving radio, each key copied or lost on its own by signal quality. VHF handheld DTMF page (ENTER twice; arrows
+  are * and #), DTMF Encoder (keypad, SEND, REDIAL) and DTMF Decoder (code, red lamp while it comes in, green lamp for
+  5 s on a match, pulse or toggle redstone), both against a radio or on its data wire. Placeholder models (bounty).
+- [ ] DTMF follow-ups (recipes done 2026-11-04: encoder `UUU/WBW`, decoder `WBW/RCR`): repeater control by DTMF (enable/disable TX, read
+  the S-meter back); a sidetone so the handheld's own keys are heard; DTMF keys on the base station's panel
 - [x] Simplex repeat controller ("parrot", id `parrot_controller`): links to the radio next to it and makes it echo
   what it receives after a delay, with receive/transmit LEDs and a wire drawn to the radio (2026-10-20; model and
   textures by the maintainer). Its recipe is a placeholder pending the recipe review below.
@@ -548,6 +552,13 @@ Models and textures we want drawn by someone else are listed in [doc/ModelDesign
   - [ ] Keep linked radios' chunks loaded? (today a far end in an unloaded chunk drops the link)
   - [x] Phones draw power through their PABX (maintainer, 2026-11-02): `phone_power_use` 0.4 a tick on top of the PABX's
     2 (20 phones match an HF receiver), a Phone PA triple on a call. The HF receiver now reads `hf_receiver`.
+  - [x] TA-43 field phone (maintainer, 2026-11-04): a party line on data wire, no PABX or power. Picking up rings the
+    others (magneto bell) until one answers; everyone off hook hears everyone. 6 phones to a line, 12 and louder with
+    power on any of them; more and the line is dead. Reaches 16384 strands of wire. Shares the telephone's handset
+    item class (`TelephoneHandsetItem.Owner`). Model and texture from `tools/field_phone_models.py`. `FieldPhoneGameTests`.
+  - [x] Data wire through unloaded chunks (maintainer, 2026-11-04): `DataWireMemory` keeps the strands every walk
+    passes (saved per dimension), and walks go on from it where chunks are unloaded, so telephones, PABXes and field
+    phones only need their own chunks loaded. Wire changes refresh it on the next tick.
   - [x] RF passes through wood planks, stairs and slabs, glass, wool and leaves (maintainer, 2026-11-02): tag
     `rf_transparent`, read by the terrain atlas and the handheld and manpack indoors check. Microwave paths still need a clear line.
   - [x] Phone PA (maintainer, 2026-11-02): a phone with no handset that answers at once and plays the caller through
@@ -640,3 +651,51 @@ Models and textures we want drawn by someone else are listed in [doc/ModelDesign
 - [ ] Look for other mods that would be easy to integrate with (maintainer, 2026-10-23)
 - [ ] Introduce random structures, auto-beacon radios, APRS Discord bridge, and external radio API hooks
 - [ ] Review all recipes together (maintainer, 2026-10-20): align crafting costs (e.g., netherite-heavy radios) with the original spec or update the design doc to reflect lighter recipes; decide the simplex repeat controller recipe
+
+## Radio Moderation Computer (maintainer, 2026-11-04; after 1.11)
+
+An admin-only block (not craftable) for moderating voice on a server. Design agreed 2026-11-04:
+
+- [ ] Features: who is talking now; listen live to everything one player sends or hears; browse and play back past
+  transmissions filtered by radio, player, frequency and time; flag recordings to keep them past retention; export
+  (Ogg Opus files written to a server folder, not pushed through the game connection); search player tapes; link map
+  of who hears whom (from the hearers of each transmission, counted per day); radio positions on a map (reuse the H19
+  map painter); a separate Proximity tab with the same tools for plain Simple Voice Chat.
+- [ ] Storage: each transmission recorded once, at its source, never once per listener; the hearers (who, strength,
+  which radio) kept as metadata, and "what X heard" played back by putting the source through the receiver effects at
+  the logged strength. Player voice stored as the Opus packets that arrive (no encoding), or re-encoded narrowband
+  (8-12 kbps) by a background thread if `moderation_archive_quality` asks. Audio appended by one writer thread to
+  hourly files; a small index (who, when, radio, frequency, position, hearers) searched in memory or an embedded
+  database. Retention deletes whole hourly files; flagging copies the recording to a kept folder first. Estimate to
+  measure: ~11-14 MB an hour of speech as received, ~3.5-5 MB narrowband.
+- [ ] Data as data, not audio: CW as key timings plus decoded text (replayable, searchable); RTTY, APRS, packet and
+  fax as their saved packet records (fax: its label and what item was sent).
+- [ ] Player tapes sent over the air: a pointer to the tape's recording, no copy. If the tape is erased, recorded over
+  or destroyed within retention, its audio file moves into the archive instead of being deleted, and goes when
+  retention ends.
+- [ ] Notes only, no audio: commercial radio modules (what played, where, when, frequency), server tapes (which tape,
+  where, when) and repeater retransmissions (a "repeated" note linked to the source transmission, which is already
+  recorded once).
+- [ ] Locking: locked to whoever places it (their UUID on the block); the owner can add other admins from its UI; an op
+  command clears the lock so it is never stranded.
+- [ ] UI: user friendly first, Windows 98 themed (grey bevels, title bar, tabs Live / Archive / Map / Links / Tapes /
+  Proximity, list views with column headers, search box, filter dropdowns, play / pause / scrub, Flag, Export).
+  H19 sounds: keys on typing, the boot sequence on start, the bell when a watched player keys up.
+- [ ] Server config: `moderation_record_radio` (false), `moderation_record_proximity` (false),
+  `moderation_retention_days` (7), `moderation_metadata_only` (false), `moderation_storage_cap_gb` (5, oldest
+  dropped first), `moderation_archive_quality` (original | narrowband), `moderation_notice` (on).
+- [ ] Privacy: off by default, proximity separately; a join notice that voice is recorded and a small REC on radio
+  screens while archiving; short default retention; only owner and added admins open it; every playback and export
+  logged with who and when. Consent laws (two-party US states, GDPR) apply to servers that turn it on.
+- [ ] Order: 1) logging, index, link map, radio map (no audio); 2) Live tab (mostly UI over RadioModeration and
+  TransmitterLog); 3) audio archive with the storage rules above; 4) Proximity tab and tape search.
+  - Server side done 2026-11-04 (`common/moderation`, `ModerationLog` is the query API): logging with hearers, index,
+    link counts, radio positions, the audio archive (flag, export to Ogg Opus, retention, cap, audit log), tape
+    pointers with copy-on-change, proximity recording and tape search data; `/radio moderation ...` for testing. Left:
+    the block, lock, networking and UI; narrowband re-encoding (no bitrate setting in Simple Voice Chat's server API).
+  - Block, lock and screen done 2026-11-04 (`moderation_computer`, `ComputerRequests`, `ModerationPlayback`,
+    `client/screens/moderation`): Live (follow what a player sends or hears), Archive (filters, detail, play clean or
+    as heard, flag, export), Map, Links, Tapes, Proximity, Access with the audit log; REC on radio screens and the
+    handheld LCD; `/radio moderation unlock <pos>`. Needs a playtest (doc/NeedsTesting.md) and a real model (bounty).
+    Left: scrubbing within a playback (play/stop only), narrowband.
+

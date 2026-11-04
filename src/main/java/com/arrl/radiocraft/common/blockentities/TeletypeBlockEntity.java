@@ -243,6 +243,8 @@ public class TeletypeBlockEntity extends BlockEntity implements MenuProvider {
 
 	private void lineSent(Level level) {
 		if(!sentLine.isEmpty() && level instanceof net.minecraft.server.level.ServerLevel serverLevel)
+			com.arrl.radiocraft.common.moderation.ModerationHooks.rttyTypist(serverLevel, sentFrequency, typist); // Names the typist on the logged RTTY.
+		if(!sentLine.isEmpty() && level instanceof net.minecraft.server.level.ServerLevel serverLevel)
 			com.arrl.radiocraft.common.radio.voice.RadioModeration.rttyLine(serverLevel, sentFrequency, typist, typistName,
 					typist == null ? "" : java.util.Objects.requireNonNullElse(com.arrl.radiocraft.common.radio.Callsigns.playerCallsign(serverLevel.getServer(), typist), ""),
 					sentLine.toString());

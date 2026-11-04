@@ -39,6 +39,8 @@ public class ClientSetupEvents {
 		event.register(RadiocraftMenuTypes.HF_RECEIVER.get(), HFReceiverScreen::new);
 		event.register(RadiocraftMenuTypes.DESK_CHARGER.get(), DeskChargerScreen::new);
 		event.register(RadiocraftMenuTypes.RADIO_INTERFACE.get(), RadioInterfaceScreen::new);
+		event.register(RadiocraftMenuTypes.DTMF_DECODER.get(), DtmfDecoderScreen::new);
+		event.register(RadiocraftMenuTypes.DTMF_ENCODER.get(), DtmfEncoderScreen::new);
 		event.register(RadiocraftMenuTypes.TELETYPE.get(), TeletypeScreen::new);
 		event.register(RadiocraftMenuTypes.APRS_TERMINAL.get(), AprsTerminalScreen::new);
 		event.register(RadiocraftMenuTypes.RADIO_FAX.get(), RadioFaxScreen::new);
@@ -50,6 +52,8 @@ public class ClientSetupEvents {
 		event.register(RadiocraftMenuTypes.TELEPHONE.get(), TelephoneScreen::new);
 		event.register(RadiocraftMenuTypes.PABX.get(), com.arrl.radiocraft.client.screens.PabxScreen::new);
 		event.register(RadiocraftMenuTypes.PHONE_PA.get(), com.arrl.radiocraft.client.screens.PhonePaScreen::new);
+		event.register(RadiocraftMenuTypes.MODERATION_COMPUTER.get(), com.arrl.radiocraft.client.screens.moderation.ModerationComputerScreen::new);
+		event.register(RadiocraftMenuTypes.REPEATER_AUTOPATCH.get(), com.arrl.radiocraft.client.screens.RepeaterAutopatchScreen::new);
 		event.register(RadiocraftMenuTypes.IONOSPHERIC_PROCESSOR.get(), com.arrl.radiocraft.client.screens.IonosphericProcessorScreen::new);
 		event.register(RadiocraftMenuTypes.TAPE_PLAYER.get(), com.arrl.radiocraft.client.screens.TapePlayerScreen::new);
 		event.register(RadiocraftMenuTypes.WEFAX_RECEIVER.get(), com.arrl.radiocraft.client.screens.WefaxReceiverScreen::new);
@@ -69,6 +73,8 @@ public class ClientSetupEvents {
 		event.registerBlockEntityRenderer((net.minecraft.world.level.block.entity.BlockEntityType) RadiocraftBlockEntities.DESK_CHARGER.get(), ctx -> new DeskChargerBlockRenderer(ctx));
 		event.registerBlockEntityRenderer(RadiocraftBlockEntities.PASSTHROUGH.get(), com.arrl.radiocraft.client.render.PassthroughRenderer::new);
 		event.registerBlockEntityRenderer(RadiocraftBlockEntities.TELEPHONE.get(), com.arrl.radiocraft.client.render.TelephoneRenderer::new);
+		event.registerBlockEntityRenderer(RadiocraftBlockEntities.MODERATION_COMPUTER.get(), com.arrl.radiocraft.client.render.ModerationComputerRenderer::new);
+		event.registerBlockEntityRenderer(RadiocraftBlockEntities.FIELD_PHONE.get(), com.arrl.radiocraft.client.render.FieldPhoneRenderer::new);
 		// Satellite dish geo renderer
 		event.registerBlockEntityRenderer((net.minecraft.world.level.block.entity.BlockEntityType) RadiocraftBlockEntities.SATELLITE_DISH.get(), ctx -> new com.arrl.radiocraft.client.render.SatelliteDishRenderer(ctx));
 		// The frequency, mode and S-meter on each radio's screen; a radio whose model has no DISPLAY draws nothing.
@@ -95,8 +101,13 @@ public class ClientSetupEvents {
 	/** The handheld direction finder's lamp blinks with its beeps (see {@link com.arrl.radiocraft.client.HandheldDfClient}). */
 	@SubscribeEvent
 	public static void clientSetup(net.neoforged.fml.event.lifecycle.FMLClientSetupEvent event) {
+		// The Config button in the mod list: NeoForge's own screen over the client, common and server (in a world) settings.
+		net.neoforged.fml.ModList.get().getModContainerById(Radiocraft.MOD_ID).ifPresent(container -> container.registerExtensionPoint(
+				net.neoforged.neoforge.client.gui.IConfigScreenFactory.class, net.neoforged.neoforge.client.gui.ConfigurationScreen::new));
 		if(com.arrl.radiocraft.compat.create.CreateCompat.isActive())
 			event.enqueueWork(com.arrl.radiocraft.compat.create.CreateAlternatorClient::registerVisual);
+		if(com.arrl.radiocraft.compat.curios.CuriosCompat.isLoaded()) // The handheld on the belt.
+			event.enqueueWork(com.arrl.radiocraft.compat.curios.HandheldBeltRenderer::register);
 		event.enqueueWork(() -> net.minecraft.client.renderer.item.ItemProperties.register(com.arrl.radiocraft.common.init.RadiocraftItems.HANDHELD_DIRECTION_FINDER.get(),
 				Radiocraft.id("lit"), (stack, level, entity, seed) -> entity == net.minecraft.client.Minecraft.getInstance().player && com.arrl.radiocraft.client.HandheldDfClient.isLit() ? 1.0F : 0.0F));
 	}
@@ -115,6 +126,13 @@ public class ClientSetupEvents {
 		event.register(com.arrl.radiocraft.client.render.WeatherStationRenderer.VANE);
 		event.register(com.arrl.radiocraft.client.render.WeatherStationRenderer.CUPS);
 		event.register(com.arrl.radiocraft.client.render.TapePlayerRenderer.REEL);
+		event.register(com.arrl.radiocraft.client.render.HandheldItemRenderer.RX_LED);
+	}
+
+	/** The VHF handheld's item models hand their drawing to {@link com.arrl.radiocraft.client.render.HandheldItemRenderer} (its live LCD). */
+	@SubscribeEvent
+	public static void modifyBakedModels(net.neoforged.neoforge.client.event.ModelEvent.ModifyBakingResult event) {
+		com.arrl.radiocraft.client.render.HandheldItemRenderer.wrapModels(event.getModels());
 	}
 
 	/** A telephone handset raises its holder's arm to the face (vanilla's goat horn pose), the handset by the ear. */
@@ -125,7 +143,13 @@ public class ClientSetupEvents {
 			public net.minecraft.client.model.HumanoidModel.ArmPose getArmPose(net.minecraft.world.entity.LivingEntity entity, net.minecraft.world.InteractionHand hand, net.minecraft.world.item.ItemStack stack) {
 				return net.minecraft.client.model.HumanoidModel.ArmPose.TOOT_HORN;
 			}
-		}, com.arrl.radiocraft.common.init.RadiocraftItems.TELEPHONE_HANDSET.get());
+		}, com.arrl.radiocraft.common.init.RadiocraftItems.TELEPHONE_HANDSET.get(), com.arrl.radiocraft.common.init.RadiocraftItems.FIELD_PHONE_HANDSET.get());
+		event.registerItem(new net.neoforged.neoforge.client.extensions.common.IClientItemExtensions() { // The handheld's live LCD.
+			@Override
+			public net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer getCustomRenderer() {
+				return com.arrl.radiocraft.client.render.HandheldItemRenderer.get();
+			}
+		}, com.arrl.radiocraft.common.init.RadiocraftItems.VHF_HANDHELD_VARIANTS.values().toArray(net.minecraft.world.item.Item[]::new));
 	}
 
 	@SubscribeEvent

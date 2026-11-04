@@ -12,6 +12,19 @@ import org.jetbrains.annotations.NotNull;
 public class PanelButton extends AbstractWidget {
 
 	private final Runnable onPress;
+	private boolean silent = false;
+
+	/** No menu click: {@code onPress} plays its own sound. */
+	public PanelButton silent() {
+		silent = true;
+		return this;
+	}
+
+	@Override
+	public void playDownSound(@NotNull net.minecraft.client.sounds.SoundManager handler) {
+		if(!silent)
+			super.playDownSound(handler);
+	}
 
 	public PanelButton(int x, int y, int width, int height, Runnable onPress) {
 		super(x, y, width, height, CommonComponents.EMPTY);

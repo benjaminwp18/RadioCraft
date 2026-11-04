@@ -46,7 +46,10 @@ public class HFRadioAllBandScreen extends HFRadioScreen<HFRadioAllBandMenu> {
     @Override
     protected void init() {
         super.init();
-        addRenderableWidget(new PanelButton(leftPos + 11, topPos + 72, 18, 19, () -> onPressPower(null))); // Power button
+        addRenderableWidget(new PanelButton(leftPos + 11, topPos + 72, 18, 19, () -> {
+            ToggleButton.playPowerClick(!menu.isPowered());
+            onPressPower(null);
+        }).silent()); // Power button
         addRenderableWidget(new BandKnob(leftPos + KNOB_X, topPos + KNOB_Y, 26, 26, widgetsTexture, 256, 256, BAND_KNOB,
                 () -> menu.blockEntity.getBandIndex(), this::onTurnBand)); // Band switch
         addRenderableWidget(new ValueButton(leftPos + 86, topPos + 57, 34, 19, 84, 49, widgetsTexture, 256, 256, () -> menu.blockEntity.getCWEnabled(), this::onPressCW));

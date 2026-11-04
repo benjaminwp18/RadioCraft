@@ -79,6 +79,38 @@ public class ElectricalHazardGameTests {
                 .thenSucceed();
     }
 
+    /**
+     * A shorted wire broken and put back, with the loop opened elsewhere in the meantime, is plain wire again: the old
+     * short does not carry on burning on the new wire (maintainer's bug, 2026-11-04).
+     */
+    @GameTest(template = GameTestUtil.EMPTY, timeoutTicks = 200, batch = "hazard_short_replaced")
+    public static void replacedWireForgetsShort(GameTestHelper helper) {
+        RadiocraftServerConfig.WIRE_HAZARDS_ENABLED.set(true);
+        BlockPos closing = new BlockPos(3, 2, 2);
+        BlockPos opened = new BlockPos(3, 2, 1);
+        helper.setBlock(BATTERY, RadiocraftBlocks.LARGE_BATTERY.get());
+        helper.startSequence()
+                .thenIdle(2)
+                .thenExecute(() -> {
+                    battery(helper, BATTERY).getStorage().setEnergy(CHARGE);
+                    wire(helper, new BlockPos(2, 2, 1), opened, new BlockPos(2, 2, 2), closing);
+                    helper.assertTrue(WireFaults.faultAt(helper.getLevel(), helper.absolutePos(closing)) == WireFaults.Kind.SHORT, "No short found");
+                })
+                .thenIdle(5) // Smoking now.
+                .thenExecute(() -> {
+                    helper.setBlock(closing, Blocks.AIR); // Broken out...
+                    helper.setBlock(opened, Blocks.AIR); // ...the loop opened elsewhere...
+                    wire(helper, closing); // ...and the wire put straight back, inside one recheck.
+                    helper.assertTrue(WireFaults.faultAt(helper.getLevel(), helper.absolutePos(closing)) == null, "The new wire kept the old short");
+                })
+                .thenIdle(RadiocraftServerConfig.WIRE_SHORT_BURN_SECONDS.get() * 20 + 10)
+                .thenExecute(() -> {
+                    RadiocraftServerConfig.WIRE_HAZARDS_ENABLED.set(false);
+                    helper.assertTrue(helper.getBlockState(closing).is(RadiocraftBlocks.WIRE.get()), "The put-back wire burned through");
+                })
+                .thenSucceed();
+    }
+
     /** Plain wire into water electrocutes a pig swimming in it. */
     @GameTest(template = GameTestUtil.EMPTY, timeoutTicks = 200, batch = "hazard_wet")
     public static void wetWireElectrocutes(GameTestHelper helper) {

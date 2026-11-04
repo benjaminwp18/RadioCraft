@@ -4,6 +4,7 @@ import com.arrl.radiocraft.common.blocks.radios.MicrophoneBlock;
 import net.neoforged.neoforge.client.model.generators.MultiPartBlockStateBuilder;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.core.Direction;
+import com.arrl.radiocraft.common.blocks.DtmfDecoderBlock;
 import com.arrl.radiocraft.common.blocks.RadioLinks;
 import com.arrl.radiocraft.common.blocks.TowerFootholdBlock;
 import com.arrl.radiocraft.Radiocraft;
@@ -43,6 +44,8 @@ public class RadiocraftBlockstateProvider extends BlockStateProvider {
 		complexHorizontalBlockWithItem(RadiocraftBlocks.AUTO_TUNER.get());
 		horizontalWithRadioLinks(RadiocraftBlocks.TELETYPE.get(), "solar_weather_station"); // The maintainer's model, from before the rename.
 		horizontalWithRadioLinks(RadiocraftBlocks.RADIO_INTERFACE.get());
+		horizontalWithRadioLinks(RadiocraftBlocks.DTMF_ENCODER.get());
+		dtmfDecoder();
 		RadiocraftBlocks.RADIO_FAXES.forEach((wood, block) -> horizontalWithRadioLinks(block.get(), "radio_fax_" + wood));
 		duplexer();
 		complexHorizontalBlockWithItem(RadiocraftBlocks.DUMMY_LOAD.get());
@@ -59,6 +62,7 @@ public class RadiocraftBlockstateProvider extends BlockStateProvider {
 		radio(RadiocraftBlocks.HF_RECEIVER.get());
 		radio(RadiocraftBlocks.VHF_REPEATER.get());
 		radio(RadiocraftBlocks.ALL_BAND_RADIO.get());
+		complexHorizontalBlockWithItem(RadiocraftBlocks.MODERATION_COMPUTER.get()); // Placeholder from tools/moderation_computer_model.py.
 	}
 
 	/**
@@ -135,11 +139,29 @@ public class RadiocraftBlockstateProvider extends BlockStateProvider {
 	 * A radio accessory: turned like the other horizontal blocks, with a floor cable (block/radio_link) out of each side
 	 * that has something it works with (see {@link RadioLinks}).
 	 */
-	private void horizontalWithRadioLinks(Block block) {
-		horizontalWithRadioLinks(block, key(block).getPath());
+	private MultiPartBlockStateBuilder horizontalWithRadioLinks(Block block) {
+		return horizontalWithRadioLinks(block, key(block).getPath());
 	}
 
-	private void horizontalWithRadioLinks(Block block, String modelName) {
+	/**
+	 * The DTMF decoder: a radio accessory ({@link #horizontalWithRadioLinks}) with its red and green lamps drawn lit over
+	 * the dark ones while their properties are set (models from tools/dtmf_models.py).
+	 */
+	private void dtmfDecoder() {
+		Block block = RadiocraftBlocks.DTMF_DECODER.get();
+		MultiPartBlockStateBuilder builder = horizontalWithRadioLinks(block);
+		ModelFile red = models().getExistingFile(modLoc("block/dtmf_decoder_red"));
+		ModelFile green = models().getExistingFile(modLoc("block/dtmf_decoder_green"));
+		for(Direction facing : Direction.Plane.HORIZONTAL) {
+			int rotation = ((int)facing.toYRot() + 180) % 360;
+			builder.part().modelFile(red).rotationY(rotation).addModel()
+					.condition(BlockStateProperties.HORIZONTAL_FACING, facing).condition(DtmfDecoderBlock.RED, true).end();
+			builder.part().modelFile(green).rotationY(rotation).addModel()
+					.condition(BlockStateProperties.HORIZONTAL_FACING, facing).condition(DtmfDecoderBlock.GREEN, true).end();
+		}
+	}
+
+	private MultiPartBlockStateBuilder horizontalWithRadioLinks(Block block, String modelName) {
 		ModelFile model = models().getExistingFile(modLoc("block/" + modelName));
 		ModelFile link = models().getExistingFile(modLoc("block/radio_link"));
 		MultiPartBlockStateBuilder builder = getMultipartBuilder(block);
@@ -150,6 +172,7 @@ public class RadiocraftBlockstateProvider extends BlockStateProvider {
 			builder.part().modelFile(link).rotationY(((int)side.toYRot() + 180) % 360).addModel()
 					.condition(RadioLinks.side(side), true).end();
 		simpleBlockItem(block, model);
+		return builder;
 	}
 
 	/** The desk microphone: the maintainer's left or right model, whichever side its radio is on, turned by facing. */

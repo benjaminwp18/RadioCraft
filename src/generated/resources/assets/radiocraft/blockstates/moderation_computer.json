@@ -1,0 +1,19 @@
+{
+  "variants": {
+    "facing=east": {
+      "model": "radiocraft:block/moderation_computer",
+      "y": 90
+    },
+    "facing=north": {
+      "model": "radiocraft:block/moderation_computer"
+    },
+    "facing=south": {
+      "model": "radiocraft:block/moderation_computer",
+      "y": 180
+    },
+    "facing=west": {
+      "model": "radiocraft:block/moderation_computer",
+      "y": 270
+    }
+  }
+}

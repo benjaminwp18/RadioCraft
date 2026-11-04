@@ -48,10 +48,13 @@ public class RadiocraftLanguageProvider extends LanguageProvider {
 			provider.add(Radiocraft.translationKey("tooltip", "telephone_handset"), "On its phone's cord: talk into it during a call. Sneak and right click the phone to hang up. The cord reaches 5 blocks.");
 			provider.add(Radiocraft.translationKey("message", "handset_in_use"), "Someone else is on this phone");
 			provider.add(Radiocraft.translationKey("message", "handset_hand_full"), "Empty your hand to pick up the phone");
+			provider.add(Radiocraft.translationKey("message", "field_phone_overloaded"), "The line is dead: %s field phones on it, %s at most");
+			provider.addItem(RadiocraftItems.FIELD_PHONE_HANDSET, "Field Phone Handset");
 			provider.addItem(RadiocraftItems.TELEPHONE_HANDSET, "Telephone Handset");
 			provider.addItem(RadiocraftItems.HF_CIRCUIT_BOARD, "HF Circuit Board");
 			provider.addItem(RadiocraftItems.ALL_BAND_CIRCUIT_BOARD, "All-Band Circuit Board");
 			provider.addItem(RadiocraftItems.SMALL_BATTERY, "Small Alkaline Battery");
+			provider.addItem(RadiocraftItems.APRS_MODULE, "APRS Module");
 			provider.addItem(RadiocraftItems.FERRITE_CORE, "Ferrite Core");
 			provider.addItem(RadiocraftItems.COAXIAL_CORE, "Coaxial Core");
 			provider.addItem(RadiocraftItems.INSULATION, "Insulation");
@@ -160,6 +163,8 @@ public class RadiocraftLanguageProvider extends LanguageProvider {
 			provider.addBlock(RadiocraftBlocks.TELEPHONE, "Telephone");
 			provider.addBlock(RadiocraftBlocks.PABX, "Phone PABX");
 			provider.addBlock(RadiocraftBlocks.PHONE_PA, "Phone PA");
+			provider.addBlock(RadiocraftBlocks.FIELD_PHONE, "TA-43 Field Phone");
+			provider.add("tooltip.radiocraft.field_phone", "A party line: wire field phones together with data wire, no exchange or power needed. Right click to pick up; the others ring. Up to 6 on a line, or 12 and louder with power on any of them.");
 			provider.add("tooltip.radiocraft.phone_pa", "Put it on a Phone PABX, then call its extension: it answers at once and the caller's voice comes out of every speaker touching it or on its data wire. Right click to set its extension and limit it to local calls.");
 			provider.add("container.radiocraft.phone_pa", "Phone PA");
 			provider.add("screen.radiocraft.phone_pa.extension", "Extension");
@@ -170,6 +175,48 @@ public class RadiocraftLanguageProvider extends LanguageProvider {
 			provider.add("screen.radiocraft.phone_pa.saved", "Saved");
 			provider.add("screen.radiocraft.phone_pa.bad_extension", "The extension is a number from 0 to 99999");
 			provider.add("screen.radiocraft.phone_pa.extension_taken", "No PABX, or extension %s is already in use");
+			// Repeater autopatch
+			provider.addBlock(RadiocraftBlocks.REPEATER_AUTOPATCH, "Repeater Autopatch Controller");
+			provider.add("tooltip.radiocraft.repeater_autopatch", "Phone calls through a VHF repeater. Link it to a Phone PABX and a repeater (touching, or on data wire). On the air: key its activation code, then a number and * to dial (# cancels); # hangs up. Calls to its extension go out on the repeater. Right click to set its extension and activation code.");
+			provider.add("container.radiocraft.repeater_autopatch", "Repeater Autopatch Controller");
+			provider.add("screen.radiocraft.repeater_autopatch.extension", "Extension");
+			provider.add("screen.radiocraft.repeater_autopatch.extension_label", "Extension (blank: PABX picks)");
+			provider.add("screen.radiocraft.repeater_autopatch.code", "Activation code");
+			provider.add("screen.radiocraft.repeater_autopatch.code_label", "Activation code (0-9 A-D, max %s)");
+			provider.add("screen.radiocraft.repeater_autopatch.repeater", "Repeater: linked");
+			provider.add("screen.radiocraft.repeater_autopatch.no_repeater", "Repeater: none linked");
+			provider.add("screen.radiocraft.repeater_autopatch.idle", "Idle");
+			provider.add("screen.radiocraft.repeater_autopatch.armed", "Armed, dialing: %s");
+			provider.add("screen.radiocraft.repeater_autopatch.calling", "Calling %s");
+			provider.add("screen.radiocraft.repeater_autopatch.ringing", "Incoming call from %s");
+			provider.add("screen.radiocraft.repeater_autopatch.in_call", "In call with %s");
+			provider.add("screen.radiocraft.repeater_autopatch.save", "Save");
+			provider.add("screen.radiocraft.repeater_autopatch.saved", "Saved");
+			provider.add("screen.radiocraft.repeater_autopatch.bad_extension", "The extension is a number from 0 to 99999");
+			provider.add("screen.radiocraft.repeater_autopatch.bad_code", "The activation code is up to %s keys: 0-9 and A-D");
+			provider.add("screen.radiocraft.repeater_autopatch.extension_taken", "No PABX, or extension %s is already in use");
+			// DTMF
+			provider.addBlock(RadiocraftBlocks.DTMF_DECODER, "DTMF Decoder");
+			provider.addBlock(RadiocraftBlocks.DTMF_ENCODER, "DTMF Encoder");
+			provider.add("tooltip.radiocraft.dtmf_decoder", "Touch it to a radio (or run data wire to it) and set a code: the red lamp lights as the code starts coming in over the air, the green one when all of it has, and it pulses or toggles redstone.");
+			provider.add("tooltip.radiocraft.dtmf_encoder", "Touch it to a radio (or run data wire to it): key in a number and SEND puts it on the air as touch tones, through repeaters too.");
+			provider.add("container.radiocraft.dtmf_decoder", "DTMF Decoder");
+			provider.add("container.radiocraft.dtmf_encoder", "DTMF Encoder");
+			provider.add("screen.radiocraft.dtmf_decoder.code", "CODE");
+			provider.add("screen.radiocraft.dtmf_decoder.code_hint", "0-9, A-D, * and #, up to 16 keys. Enter or SAVE sets it");
+			provider.add("screen.radiocraft.dtmf_decoder.save", "SAVE");
+			provider.add("screen.radiocraft.dtmf_decoder.pulse", "ON MATCH: PULSE");
+			provider.add("screen.radiocraft.dtmf_decoder.toggle", "ON MATCH: TOGGLE");
+			provider.add("screen.radiocraft.dtmf_decoder.tip.mode", "Pulse gives a one second redstone pulse for each match; toggle turns the output on, and off at the next match");
+			provider.add("screen.radiocraft.dtmf_decoder.receiving", "RECEIVING");
+			provider.add("screen.radiocraft.dtmf_decoder.match", "MATCH");
+			provider.add("screen.radiocraft.dtmf_decoder.heard", "HEARD: %s");
+			provider.add("screen.radiocraft.dtmf_encoder.del", "DEL");
+			provider.add("screen.radiocraft.dtmf_encoder.clear", "CLR");
+			provider.add("screen.radiocraft.dtmf_encoder.redial", "REDIAL");
+			provider.add("screen.radiocraft.dtmf_encoder.send", "SEND");
+			provider.add("screen.radiocraft.dtmf_encoder.last", "LAST: %s");
+			provider.add("message.radiocraft.dtmf_encoder.no_radio", "No radio next to the encoder is switched on and able to transmit");
 			provider.add("tooltip.radiocraft.pabx", "Every telephone needs one: phones touching it or on its data wire call each other by extension. Needs power. PABXes on one data wire or across a microwave link call each other by master number, then extension; with the same master number they act as one PABX. Right click to set its master number, first extension, All-Call extension and name.");
 			provider.add("container.radiocraft.pabx", "Phone PABX");
 			provider.add("screen.radiocraft.pabx.master", "Master number");
@@ -426,6 +473,8 @@ public class RadiocraftLanguageProvider extends LanguageProvider {
             provider.add("subtitles.radiocraft.teletype", "Teletype printing");
             provider.add("subtitles.radiocraft.teletype_ding", "Teletype bell");
             provider.add("subtitles.radiocraft.redstone_rfi", "Radio picks up interference");
+            provider.add("subtitles.radiocraft.h19_running", "Terminal whirs");
+            provider.add("subtitles.radiocraft.h19_bell", "Terminal bell");
             provider.add(Radiocraft.translationKey("solar_event", "none"), "None");
             provider.add(Radiocraft.translationKey("solar_event", "great"), "Great");
             provider.add(Radiocraft.translationKey("solar_event", "good"), "Good");
@@ -451,6 +500,18 @@ public class RadiocraftLanguageProvider extends LanguageProvider {
             provider.add(Radiocraft.translationKey("commands", "moderate.one"), "Listening to %s's radio traffic; /radio moderate off to stop");
             provider.add(Radiocraft.translationKey("commands", "moderate.off"), "Stopped listening to radio traffic");
             provider.add(Radiocraft.translationKey("commands", "moderate.not_on"), "You were not listening to radio traffic");
+            provider.add(Radiocraft.translationKey("message", "moderation.notice.radio"), "This server records voice sent over radios for moderation (kept %s days).");
+            provider.add(Radiocraft.translationKey("message", "moderation.notice.proximity"), "This server records voice chat for moderation (kept %s days).");
+            provider.add(Radiocraft.translationKey("message", "moderation.notice.both"), "This server records voice chat and voice sent over radios for moderation (kept %s days).");
+            provider.add(Radiocraft.translationKey("commands", "moderation.not_running"), "The moderation log is not running");
+            provider.add(Radiocraft.translationKey("commands", "moderation.status"), "Moderation log: radio %s, proximity %s, metadata only %s, kept %s days; %s transmissions logged, %s on the air; %s MB; %s frames dropped");
+            provider.add(Radiocraft.translationKey("commands", "moderation.listed"), "%s of %s transmissions shown, newest first");
+            provider.add(Radiocraft.translationKey("commands", "moderation.purged"), "Moderation log retention run: %s files deleted");
+            provider.add(Radiocraft.translationKey("commands", "moderation.flagged"), "Transmission %s flagged: kept until unflagged");
+            provider.add(Radiocraft.translationKey("commands", "moderation.unflagged"), "Transmission %s unflagged");
+            provider.add(Radiocraft.translationKey("commands", "moderation.unknown"), "No transmission %s in the moderation log");
+            provider.add(Radiocraft.translationKey("commands", "moderation.exported"), "Exported %s file(s) to %s");
+            addModerationComputer(provider);
             provider.add(Radiocraft.translationKey("screen", "cw.chat"), "Type to send as Morse");
             provider.add(Radiocraft.translationKey("screen", "cw.send"), "Send");
             provider.add(Radiocraft.translationKey("screen", "cw.sending"), "Sending...");
@@ -507,6 +568,9 @@ public class RadiocraftLanguageProvider extends LanguageProvider {
             provider.add(Radiocraft.translationKey("tooltip", "battery_percentage"), "Charge: %s%%");
 			provider.add(Radiocraft.translationKey("tooltip", "small_battery"), "A common small battery, typically starts with 50-70% charge");
 			provider.add(Radiocraft.translationKey("tooltip", "vhf_handheld_battery_swap"), "Click battery on VHF Handheld to swap batteries");
+			provider.add(Radiocraft.translationKey("tooltip", "vhf_handheld_aprs"), "APRS module installed");
+			provider.add(Radiocraft.translationKey("message", "scroll_tuned"), "%s MHz");
+			provider.add(Radiocraft.translationKey("tooltip", "aprs_module"), "Craft with a VHF handheld to install it: APRS opens its station list and messages");
 			provider.add(Radiocraft.translationKey("tooltip", "crystal_pure"), "Pure crystal: a little less noise.");
 			provider.add(Radiocraft.translationKey("tooltip", "crystal_poor"), "Poor crystal: a little more noise, and it drifts off frequency.");
 			// Shown by ItemTooltipEvents on items whose class adds no tooltip of its own.
@@ -564,6 +628,13 @@ public class RadiocraftLanguageProvider extends LanguageProvider {
 			provider.add("config.jade.plugin_radiocraft.battery", "Battery Charge");
 			provider.add("config.jade.plugin_radiocraft.solar_panel", "Solar Panel Output");
 
+			// The config screen (mod list, Config): every setting and section named, as NeoForge looks them up.
+			provider.add(Radiocraft.MOD_ID + ".configuration.title", "RadioCraft");
+			java.util.Set<String> configKeys = new java.util.HashSet<>();
+			for(net.neoforged.neoforge.common.ModConfigSpec spec : java.util.List.of(com.arrl.radiocraft.RadiocraftClientConfig.SPEC,
+					com.arrl.radiocraft.CommonConfig.SPEC, com.arrl.radiocraft.RadiocraftServerConfig.SPEC))
+				addConfigNames(provider, spec.getSpec(), configKeys);
+
 			Arrays.stream(LicenseClass.values()).forEach((licenseClass) -> {
                 // I'm not going to bother pulling in the Apache Commons Text library, because I really don't want to shadow it in
                 @SuppressWarnings("deprecation")
@@ -571,6 +642,200 @@ public class RadiocraftLanguageProvider extends LanguageProvider {
 				provider.add(Radiocraft.translationKey("license_class", licenseClass.name()), friendlyClassName);
 			});
 		});
+	}
+
+	/** The Radio Moderation Computer: its block, lock messages, unlock command and every word on its screen. */
+	private static void addModerationComputer(LanguageProvider provider) {
+		provider.addBlock(RadiocraftBlocks.MODERATION_COMPUTER, "Radio Moderation Computer");
+		provider.add(Radiocraft.translationKey("container", "moderation_computer"), "Radio Moderation Computer");
+		provider.add(Radiocraft.translationKey("tooltip", "moderation_computer"), "For server admins: who is talking, recordings, the link and radio maps. Locked to whoever places it. Not craftable.");
+		provider.add(Radiocraft.translationKey("message", "moderation_computer.unowned"), "Placed without an owner: an operator can claim it by using it");
+		provider.add(Radiocraft.translationKey("message", "moderation_computer.claimed"), "This moderation computer is yours now");
+		provider.add(Radiocraft.translationKey("message", "moderation_computer.locked"), "Locked: this moderation computer belongs to %s");
+		provider.add(Radiocraft.translationKey("message", "moderation_computer.locked_unowned"), "Locked: only an operator can claim this moderation computer");
+		provider.add(Radiocraft.translationKey("message", "moderate.heard"), "Heard by %s: %s, %s MHz");
+		provider.add(Radiocraft.translationKey("commands", "moderation.not_computer"), "No moderation computer at %s");
+		provider.add(Radiocraft.translationKey("commands", "moderation.unlocked"), "Moderation computer at %s unlocked (was %s's); the next operator to use it owns it");
+
+		java.util.function.BiConsumer<String, String> s = (key, text) -> provider.add(Radiocraft.translationKey("screen", "moderation_computer." + key), text);
+		s.accept("tab.live", "Live");
+		s.accept("tab.live_proximity", "Live");
+		s.accept("tab.archive", "Archive");
+		s.accept("tab.map", "Map");
+		s.accept("tab.links", "Links");
+		s.accept("tab.tapes", "Tapes");
+		s.accept("tab.proximity", "Proximity");
+		s.accept("tab.access", "Access");
+		s.accept("range.last_hour", "Last hour");
+		s.accept("range.today", "Today");
+		s.accept("range.last_24_hours", "Last 24 hours");
+		s.accept("range.last_7_days", "Last 7 days");
+		s.accept("range.all", "Everything kept");
+		for(String[] column : new String[][] { { "talker", "Talker" }, { "kind", "Kind" }, { "frequency", "MHz" }, { "radio", "Radio" }, { "position", "Where" },
+				{ "hearing", "Heard" }, { "time", "Time" }, { "speaker", "Speaker" }, { "length", "Length" }, { "from", "From" }, { "to", "To" }, { "count", "Times" },
+				{ "recorded", "Recorded" }, { "speakers", "Speakers" }, { "plays", "Aired" }, { "last_played", "Last aired" }, { "admins", "Admins" }, { "who", "Who" },
+				{ "action", "Did" }, { "transmission", "Recording" }, { "detail", "Detail" } })
+			s.accept("col." + column[0], column[1]);
+		for(String[] kind : new String[][] { { "player_voice", "Voice" }, { "proximity", "Voice chat" }, { "autopatch", "Phone patch" }, { "block_audio", "Block audio" },
+				{ "tape", "Tape" }, { "server_tape", "Server tape" }, { "tape_recording", "Tape recorded" }, { "commercial", "Broadcast" }, { "repeated", "Repeated" },
+				{ "parrot", "Parrot echo" }, { "dtmf", "DTMF" }, { "cw", "CW" }, { "data", "Data" } })
+			s.accept("kind." + kind[0], kind[1]);
+		s.accept("kinds.all", "All kinds");
+		s.accept("kinds.voice", "Voice");
+		s.accept("kinds.tapes", "Tapes");
+		s.accept("kinds.data", "Data");
+		s.accept("kinds.cw", "CW");
+		s.accept("kinds.notes", "Notes");
+		s.accept("role.either", "talked or heard");
+		s.accept("role.talker", "talked");
+		s.accept("role.hearer", "heard");
+		s.accept("radio.handheld", "Handheld");
+		s.accept("radio.manpack", "Manpack");
+		s.accept("radio.commercial_module", "Commercial module");
+		s.accept("radio.proximity", "Voice chat");
+		s.accept("on", "on");
+		s.accept("off", "off");
+
+		s.accept("live.heading", "On the air now");
+		s.accept("live.heading_proximity", "Talking in voice chat now");
+		s.accept("live.empty", "Nobody is on the air.");
+		s.accept("live.empty_proximity", "Nobody is talking in voice chat (or it is not being recorded).");
+		s.accept("live.listen", "Listen to talker");
+		s.accept("live.listen_frequency", "Listen");
+		s.accept("live.system", "Include system/world stations");
+		s.accept("live.freeze", "Freeze");
+		s.accept("archive.logging_off", "Logging is disabled: nothing is being recorded (server config moderation_record_radio).");
+		s.accept("archive.logging_off_proximity", "Logging is disabled: voice chat is not being recorded (server config moderation_record_proximity).");
+		s.accept("live.listen_voice", "Listen to speaker");
+		s.accept("live.stop", "Stop listening");
+		s.accept("live.player", "Player:");
+		s.accept("live.hear_through", "Hear what they hear");
+		s.accept("live.voice_of", "Hear their voice chat");
+		s.accept("live.not_listening", "Not listening");
+		s.accept("live.listening_sends", "Listening to %s");
+		s.accept("live.listening_hears", "Hearing what %s hears");
+		s.accept("live.listening_voice", "Hearing %s's voice chat");
+		s.accept("live.listening_frequency", "Tuned to %s MHz");
+
+		s.accept("archive.player", "Player");
+		s.accept("archive.anyone", "anyone");
+		s.accept("archive.words", "Words");
+		s.accept("archive.words_hint", "name, callsign, text...");
+		s.accept("archive.mhz", "MHz");
+		s.accept("archive.to", "to");
+		s.accept("archive.kind", "Kind");
+		s.accept("archive.when", "When");
+		s.accept("archive.flagged_only", "Flagged only");
+		s.accept("archive.radio", "Radio");
+		s.accept("archive.where", "Where");
+		s.accept("archive.pos_hint", "x, y, z");
+		s.accept("archive.world", "World");
+		s.accept("archive.any_world", "Any world");
+		s.accept("archive.search", "Search");
+		s.accept("archive.clear", "Clear");
+		s.accept("archive.press_search", "Set the filters and press Search.");
+		s.accept("archive.none", "Nothing matches.");
+		s.accept("archive.no_results", "No results");
+		s.accept("archive.page", "%s-%s of %s");
+		s.accept("archive.pick", "Pick a recording on the left to see it here.");
+		s.accept("archive.play_as", "Play");
+		s.accept("archive.clean", "as sent (clean)");
+		s.accept("archive.heard_by", "as heard by %s (%s%%)");
+		s.accept("archive.play", "Play");
+		s.accept("archive.stop", "Stop");
+		s.accept("archive.flag", "Flag");
+		s.accept("archive.unflag", "Unflag");
+		s.accept("archive.export", "Export");
+		s.accept("archive.export_flagged", "Export flagged");
+
+		s.accept("detail.kind", "Kind: %s");
+		s.accept("detail.flagged", "FLAGGED (kept)");
+		s.accept("detail.talkers", "Talkers: %s");
+		s.accept("detail.frequency", "Frequency: %s MHz %s, band %s");
+		s.accept("detail.ctcss", "tone %s Hz");
+		s.accept("detail.radio", "Radio: %s at %s, %s");
+		s.accept("detail.antenna", "Antenna at %s");
+		s.accept("detail.hearers", "Heard by %s:");
+		s.accept("detail.more", "and %s more");
+		s.accept("detail.text", "Text: %s");
+		s.accept("detail.cw", "CW: %s");
+		s.accept("detail.packets", "Data packets (%s):");
+		s.accept("detail.linked", "Repeats recording #%s");
+		s.accept("detail.tape", "Tape recording %s");
+		s.accept("detail.frames", "Audio: %s frames kept");
+		s.accept("detail.no_audio", "No audio kept");
+
+		s.accept("map.refresh", "Refresh");
+		s.accept("map.fit", "Fit");
+		s.accept("map.show_in_archive", "Show in Archive");
+		s.accept("map.scale", "%s blocks/pixel, %s radios. Drag to move, wheel to zoom.");
+		s.accept("map.empty", "No radios on the air here in this time.");
+		s.accept("map.last_talker", "Last talker: %s");
+		s.accept("map.frequency", "Frequency: %s MHz");
+		s.accept("map.counts", "Sent %s, heard %s");
+		s.accept("map.last", "Last on the air: %s");
+
+		s.accept("links.proximity", "Voice chat instead of radio");
+		s.accept("links.empty", "Nobody heard anybody in this time.");
+		s.accept("tapes.speaker", "Speaker");
+		s.accept("tapes.empty", "No player tapes recorded or aired in this time.");
+		s.accept("proximity.live", "On now");
+		s.accept("proximity.archive", "Archive");
+		s.accept("proximity.recording", "Voice chat is being recorded.");
+		s.accept("proximity.not_recording", "Voice chat is not recorded (moderation_record_proximity is off).");
+
+		s.accept("access.owner", "Owner: %s");
+		s.accept("access.you_own", "You own this computer.");
+		s.accept("access.owner_only", "Only the owner can change who has access.");
+		s.accept("access.no_admins", "No admins added.");
+		s.accept("access.name_hint", "player name");
+		s.accept("access.add", "Add admin");
+		s.accept("access.remove", "Remove selected");
+		s.accept("access.transfer_label", "Hand the computer over to:");
+		s.accept("access.transfer", "Hand over");
+		s.accept("access.reboot", "Reboot");
+		s.accept("access.audit", "Audit log");
+		s.accept("access.no_audit", "Nothing logged in this time.");
+
+		s.accept("status.rec_on", "REC: radio %s, voice chat %s");
+		s.accept("status.rec_off", "Not recording");
+		s.accept("status.storage", "%s of %s GB, kept %s days");
+		s.accept("status.no_log", "No log");
+
+		s.accept("msg.admin_added", "%s can open this computer now");
+		s.accept("msg.admin_removed", "%s can no longer open this computer");
+		s.accept("msg.transferred", "This computer belongs to %s now; you stay on as an admin");
+		s.accept("msg.exported", "Exported %s file(s): %s");
+		s.accept("msg.exported_none", "Nothing to export: no audio kept");
+		s.accept("err.unknown_player", "No player called %s is known to this server");
+		s.accept("err.unknown_transmission", "That recording is gone (past retention?)");
+		s.accept("err.not_running", "The moderation log is not running: turn on moderation_record_radio");
+		s.accept("err.failed", "Failed: %s");
+		s.accept("err.owner_only", "Only the owner can do that");
+		s.accept("err.admins_full", "This computer has as many admins as it can take");
+		s.accept("err.already_admin", "%s can already open this computer");
+		s.accept("err.denied", "You no longer have access to this computer");
+		s.accept("err.bad_frequency", "Type frequencies in MHz, like 146.52");
+		s.accept("err.bad_position", "Type a position as x, y, z");
+		s.accept("err.play_no_voice", "Playback needs Simple Voice Chat connected");
+		s.accept("err.play_read_failed", "Could not read that recording");
+		s.accept("err.play_unknown", "That recording is gone (past retention?)");
+		s.accept("err.play_no_audio", "No audio was kept for that recording");
+	}
+
+	/**
+	 * Names each setting and section in {@code config} for the config screen ({@code radiocraft.configuration.<key>},
+	 * see {@link ConfigNames}); a key already named (in another file or section) is named once.
+	 */
+	private static void addConfigNames(LanguageProvider provider, com.electronwill.nightconfig.core.UnmodifiableConfig config, java.util.Set<String> done) {
+		for(com.electronwill.nightconfig.core.UnmodifiableConfig.Entry entry : config.entrySet()) {
+			Object value = entry.getRawValue();
+			boolean section = value instanceof com.electronwill.nightconfig.core.UnmodifiableConfig;
+			if(done.add(entry.getKey()))
+				provider.add(Radiocraft.MOD_ID + ".configuration." + entry.getKey(), section ? ConfigNames.section(entry.getKey()) : ConfigNames.name(entry.getKey()));
+			if(value instanceof com.electronwill.nightconfig.core.UnmodifiableConfig inner)
+				addConfigNames(provider, inner, done);
+		}
 	}
 
 	/** Names a radio's crystal versions: "Premium 40m Radio", "40m Radio", "Cheap 40m Radio". */

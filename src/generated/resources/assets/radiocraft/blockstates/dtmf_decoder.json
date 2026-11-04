@@ -1,0 +1,152 @@
+{
+  "multipart": [
+    {
+      "apply": {
+        "model": "radiocraft:block/dtmf_decoder"
+      },
+      "when": {
+        "facing": "north"
+      }
+    },
+    {
+      "apply": {
+        "model": "radiocraft:block/dtmf_decoder",
+        "y": 90
+      },
+      "when": {
+        "facing": "east"
+      }
+    },
+    {
+      "apply": {
+        "model": "radiocraft:block/dtmf_decoder",
+        "y": 180
+      },
+      "when": {
+        "facing": "south"
+      }
+    },
+    {
+      "apply": {
+        "model": "radiocraft:block/dtmf_decoder",
+        "y": 270
+      },
+      "when": {
+        "facing": "west"
+      }
+    },
+    {
+      "apply": {
+        "model": "radiocraft:block/radio_link"
+      },
+      "when": {
+        "north": "true"
+      }
+    },
+    {
+      "apply": {
+        "model": "radiocraft:block/radio_link",
+        "y": 90
+      },
+      "when": {
+        "east": "true"
+      }
+    },
+    {
+      "apply": {
+        "model": "radiocraft:block/radio_link",
+        "y": 180
+      },
+      "when": {
+        "south": "true"
+      }
+    },
+    {
+      "apply": {
+        "model": "radiocraft:block/radio_link",
+        "y": 270
+      },
+      "when": {
+        "west": "true"
+      }
+    },
+    {
+      "apply": {
+        "model": "radiocraft:block/dtmf_decoder_red"
+      },
+      "when": {
+        "facing": "north",
+        "red": "true"
+      }
+    },
+    {
+      "apply": {
+        "model": "radiocraft:block/dtmf_decoder_green"
+      },
+      "when": {
+        "facing": "north",
+        "green": "true"
+      }
+    },
+    {
+      "apply": {
+        "model": "radiocraft:block/dtmf_decoder_red",
+        "y": 90
+      },
+      "when": {
+        "facing": "east",
+        "red": "true"
+      }
+    },
+    {
+      "apply": {
+        "model": "radiocraft:block/dtmf_decoder_green",
+        "y": 90
+      },
+      "when": {
+        "facing": "east",
+        "green": "true"
+      }
+    },
+    {
+      "apply": {
+        "model": "radiocraft:block/dtmf_decoder_red",
+        "y": 180
+      },
+      "when": {
+        "facing": "south",
+        "red": "true"
+      }
+    },
+    {
+      "apply": {
+        "model": "radiocraft:block/dtmf_decoder_green",
+        "y": 180
+      },
+      "when": {
+        "facing": "south",
+        "green": "true"
+      }
+    },
+    {
+      "apply": {
+        "model": "radiocraft:block/dtmf_decoder_red",
+        "y": 270
+      },
+      "when": {
+        "facing": "west",
+        "red": "true"
+      }
+    },
+    {
+      "apply": {
+        "model": "radiocraft:block/dtmf_decoder_green",
+        "y": 270
+      },
+      "when": {
+        "facing": "west",
+        "green": "true"
+      }
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "name": "TA-43 Field Phone",
+  "icon": "radiocraft:field_phone",
+  "category": "radiocraft:telephones",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "The $(item)TA-43 Field Phone$() needs no $(l:radiocraft:telephones/pabx)PABX$(/l) and no power. Field phones touching each other or on the same $(l:radiocraft:radios/data_wire)data wire$(/l) share one party line, up to about 16,000 blocks of wire. Only the phones need to be loaded, not the wire between them.$(br2)Right click with an empty hand to pick up the handset. The other phones ring like an old crank phone until someone answers. Everyone with a handset up hears everyone else."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Party line",
+      "text": "A line takes up to $(thing)6$() phones. Run a $(l:radiocraft:power/wire)power wire$(/l) to any one of them and it takes $(thing)12$(), and voices and bells are louder. With more phones than that, the line is dead.$(br2)Right click with the handset to hang up. Walk more than 5 blocks away and the cord snaps it back."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "radiocraft:field_phone"
+    }
+  ]
+}

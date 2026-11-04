@@ -1,0 +1,31 @@
+{
+  "name": "Repeater Autopatch",
+  "icon": "radiocraft:repeater_autopatch",
+  "category": "radiocraft:repeaters",
+  "sortnum": 4,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "The $(item)Repeater Autopatch Controller$() puts phone calls on a $(l:radiocraft:repeaters/repeater)repeater$(/l). Link it to a $(l:radiocraft:telephones/pabx)Phone PABX$(/l) and to the repeater, touching or by $(l:radiocraft:radios/data_wire)data wire$(/l). On the PABX it is a phone with its own extension.$(br2)Right click it to set its $(thing)extension$() (empty: the PABX picks) and its $(thing)activation code$(): up to 8 keys, 0-9 and A-D."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Calling out",
+      "text": "Send the activation code on the repeater's input with $(l:radiocraft:repeaters/dtmf)DTMF$(): a burst of dial tone says it is listening. Key the number, then $(thing)*$() to dial it, or $(thing)#$() to give up. Ten seconds with no key gives up too.$(br2)Ringback comes back while the phone rings; a fast busy tone if the call cannot be made."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "On a call",
+      "text": "What the repeater hears goes down the line. The phone's side goes out on the repeater, but only while nobody is transmitting: the radio side is simplex, so let go to hear the phone. What the phone says while you transmit is lost.$(br2)$(thing)#$() on the air hangs up. So does the phone hanging up, or three minutes with nothing from the radio side."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Calls in",
+      "text": "Call its extension from any phone: it rings briefly on the air and answers by itself. All-Call passes it by. With no repeater working it turns the call away.$(br2)Its lamp is lit while it is armed or on a call."
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "radiocraft:repeater_autopatch"
+    }
+  ]
+}

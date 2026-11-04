@@ -27,5 +27,16 @@ public class RadiocraftSoundEvents {
 	public static Supplier<SoundEvent> TELETYPE_DING = SOUND_EVENTS.register("teletype_ding", () -> SoundEvent.createFixedRangeEvent(Radiocraft.id("teletype_ding"), 16.0F));
 	/** The printing sound with a fade at the end; not used yet. */
 	public static Supplier<SoundEvent> TELETYPE_FADEOUT = SOUND_EVENTS.register("teletype_fadeout", () -> SoundEvent.createFixedRangeEvent(Radiocraft.id("teletype_fadeout"), 16.0F));
+	/** The H19 running: its fan and flyback whine, looped at the terminal while it has power (S0lver's sounds, 2026-11-04, as are the next two). */
+	public static Supplier<SoundEvent> H19_RUNNING = SOUND_EVENTS.register("h19_running", () -> SoundEvent.createFixedRangeEvent(Radiocraft.id("h19_running"), 12.0F));
+	/** The H19's bell: as it boots, and when a message comes in. */
+	public static Supplier<SoundEvent> H19_BELL = SOUND_EVENTS.register("h19_bell", () -> SoundEvent.createFixedRangeEvent(Radiocraft.id("h19_bell"), 16.0F));
+	/** One key of the H19's keyboard; quieter, a character appearing on its screen. */
+	public static Supplier<SoundEvent> H19_TYPE = SOUND_EVENTS.register("h19_type", () -> SoundEvent.createFixedRangeEvent(Radiocraft.id("h19_type"), 8.0F));
+	/** A radio's power button latching in (on) and popping out (off). */
+	public static Supplier<SoundEvent> POWER_IN = SOUND_EVENTS.register("power_in", () -> SoundEvent.createFixedRangeEvent(Radiocraft.id("power_in"), 8.0F));
+	public static Supplier<SoundEvent> POWER_OUT = SOUND_EVENTS.register("power_out", () -> SoundEvent.createFixedRangeEvent(Radiocraft.id("power_out"), 8.0F));
+	/** A recording of FM static; the voice path decodes the file itself (FmStatic), this is the same for the sound engine. */
+	public static Supplier<SoundEvent> FM_STATIC = SOUND_EVENTS.register("fm_static", () -> SoundEvent.createFixedRangeEvent(Radiocraft.id("fm_static"), 32.0F));
 
 }

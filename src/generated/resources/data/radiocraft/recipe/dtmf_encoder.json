@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "key": {
+    "B": {
+      "item": "radiocraft:hf_circuit_board"
+    },
+    "U": {
+      "item": "minecraft:stone_button"
+    },
+    "W": {
+      "item": "radiocraft:wire"
+    }
+  },
+  "pattern": [
+    "UUU",
+    "WBW"
+  ],
+  "result": {
+    "count": 1,
+    "id": "radiocraft:dtmf_encoder"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_dtmf_decoder": {
+      "conditions": {
+        "items": [
+          {
+            "items": "radiocraft:dtmf_decoder"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    },
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "radiocraft:repeater_autopatch"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_dtmf_decoder"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "radiocraft:repeater_autopatch"
+    ]
+  }
+}

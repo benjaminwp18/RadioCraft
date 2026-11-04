@@ -57,6 +57,10 @@ public class RadiocraftBlockEntities {
 
 	public static final Supplier<BlockEntityType<?>> RADIO_INTERFACE = BLOCK_ENTITY_TYPES.register("radio_interface",
 			() -> BlockEntityType.Builder.of(com.arrl.radiocraft.common.blockentities.RadioInterfaceBlockEntity::new, RadiocraftBlocks.RADIO_INTERFACE.get()).build(null));
+	public static final Supplier<BlockEntityType<com.arrl.radiocraft.common.blockentities.DtmfDecoderBlockEntity>> DTMF_DECODER = BLOCK_ENTITY_TYPES.register("dtmf_decoder",
+			() -> BlockEntityType.Builder.of(com.arrl.radiocraft.common.blockentities.DtmfDecoderBlockEntity::new, RadiocraftBlocks.DTMF_DECODER.get()).build(null));
+	public static final Supplier<BlockEntityType<com.arrl.radiocraft.common.blockentities.DtmfEncoderBlockEntity>> DTMF_ENCODER = BLOCK_ENTITY_TYPES.register("dtmf_encoder",
+			() -> BlockEntityType.Builder.of(com.arrl.radiocraft.common.blockentities.DtmfEncoderBlockEntity::new, RadiocraftBlocks.DTMF_ENCODER.get()).build(null));
 	public static final Supplier<BlockEntityType<?>> APRS_TERMINAL = BLOCK_ENTITY_TYPES.register("aprs_h19",
 			() -> BlockEntityType.Builder.of(com.arrl.radiocraft.common.blockentities.AprsTerminalBlockEntity::new, RadiocraftBlocks.APRS_TERMINAL.get()).build(null));
 	public static final Supplier<BlockEntityType<?>> RADIO_FAX = BLOCK_ENTITY_TYPES.register("radio_fax",
@@ -120,6 +124,12 @@ public class RadiocraftBlockEntities {
 			() -> BlockEntityType.Builder.of(com.arrl.radiocraft.common.blockentities.PabxBlockEntity::new, RadiocraftBlocks.PABX.get()).build(null));
 	public static final Supplier<BlockEntityType<com.arrl.radiocraft.common.blockentities.PhonePaBlockEntity>> PHONE_PA = BLOCK_ENTITY_TYPES.register("phone_pa",
 			() -> BlockEntityType.Builder.of(com.arrl.radiocraft.common.blockentities.PhonePaBlockEntity::new, RadiocraftBlocks.PHONE_PA.get()).build(null));
+	public static final Supplier<BlockEntityType<com.arrl.radiocraft.common.blockentities.ModerationComputerBlockEntity>> MODERATION_COMPUTER = BLOCK_ENTITY_TYPES.register("moderation_computer",
+			() -> BlockEntityType.Builder.of(com.arrl.radiocraft.common.blockentities.ModerationComputerBlockEntity::new, RadiocraftBlocks.MODERATION_COMPUTER.get()).build(null));
+	public static final Supplier<BlockEntityType<com.arrl.radiocraft.common.blockentities.RepeaterAutopatchBlockEntity>> REPEATER_AUTOPATCH = BLOCK_ENTITY_TYPES.register("repeater_autopatch",
+			() -> BlockEntityType.Builder.of(com.arrl.radiocraft.common.blockentities.RepeaterAutopatchBlockEntity::new, RadiocraftBlocks.REPEATER_AUTOPATCH.get()).build(null));
+	public static final Supplier<BlockEntityType<com.arrl.radiocraft.common.blockentities.FieldPhoneBlockEntity>> FIELD_PHONE = BLOCK_ENTITY_TYPES.register("field_phone",
+			() -> BlockEntityType.Builder.of(com.arrl.radiocraft.common.blockentities.FieldPhoneBlockEntity::new, RadiocraftBlocks.FIELD_PHONE.get()).build(null));
 	public static final Supplier<BlockEntityType<TelephoneBlockEntity>> TELEPHONE = BLOCK_ENTITY_TYPES.register("telephone",
 			() -> BlockEntityType.Builder.of(TelephoneBlockEntity::new, RadiocraftBlocks.TELEPHONE.get()).build(null));
 	public static final Supplier<BlockEntityType<MicrowaveDishBlockEntity>> MICROWAVE_HORN = BLOCK_ENTITY_TYPES.register("microwave_horn",

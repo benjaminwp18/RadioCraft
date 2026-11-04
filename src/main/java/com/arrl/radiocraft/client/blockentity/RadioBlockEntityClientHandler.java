@@ -65,6 +65,8 @@ public class RadioBlockEntityClientHandler {
 		if(sounds == null)
 			return;
 		syncSpeakerStatic(radio, sounds);
+		// A redstone hum ends after each burst; its replacement picks a recording again.
+		sounds.replaceAll(sound -> sound instanceof RadioInterferenceHumSoundInstance hum && hum.isStopped() ? new RadioInterferenceHumSoundInstance(radio) : sound);
 		SoundManager soundManager = mc.getSoundManager();
 		for(SoundInstance sound : sounds) {
 			if(!soundManager.isActive(sound))

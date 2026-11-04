@@ -133,6 +133,19 @@ public class RadiocraftRecipesProvider extends RecipeProvider {
                 .define('P', Items.TERRACOTTA)
                 .unlockedBy("has_microphone_element", has(RadiocraftItems.MICROPHONE_ELEMENT.get()))
                 .save(recipeOutput, Radiocraft.id("telephone"));
+        // The TA-43 field phone: a carbon capsule for the handset, a note block for the bell, the line's binding posts
+        // (data wire), in an olive drab iron case.
+        ShapedRecipeBuilder.shaped(RecipeCategory.MISC, RadiocraftItems.FIELD_PHONE.get(), 1)
+                .pattern(" M ")
+                .pattern("GNG")
+                .pattern("IDI")
+                .define('M', RadiocraftItems.MICROPHONE_ELEMENT.get())
+                .define('G', Items.GREEN_DYE)
+                .define('N', Items.NOTE_BLOCK)
+                .define('I', Items.IRON_INGOT)
+                .define('D', RadiocraftItems.DATA_WIRE.get())
+                .unlockedBy("has_microphone_element", has(RadiocraftItems.MICROPHONE_ELEMENT.get()))
+                .save(recipeOutput, Radiocraft.id("field_phone"));
         // The Phone PA: a phone's works and a radio speaker's output, in an iron case.
         ShapedRecipeBuilder.shaped(RecipeCategory.MISC, RadiocraftItems.PHONE_PA.get(), 1)
                 .pattern("III")
@@ -155,6 +168,36 @@ public class RadiocraftRecipesProvider extends RecipeProvider {
                 .define('R', Items.REDSTONE)
                 .unlockedBy("has_telephone", has(RadiocraftItems.TELEPHONE.get()))
                 .save(recipeOutput, Radiocraft.id("pabx"));
+        // The repeater autopatch: the PABX's, with a DTMF decoder in place of the ringer to hear its codes off the air.
+        ShapedRecipeBuilder.shaped(RecipeCategory.MISC, RadiocraftItems.REPEATER_AUTOPATCH.get(), 1)
+                .pattern("III")
+                .pattern("DCD")
+                .pattern("IXI")
+                .define('I', Items.IRON_INGOT)
+                .define('D', RadiocraftItems.DATA_WIRE.get())
+                .define('C', Items.COMPARATOR)
+                .define('X', RadiocraftItems.DTMF_DECODER.get())
+                .unlockedBy("has_dtmf_decoder", has(RadiocraftItems.DTMF_DECODER.get()))
+                .save(recipeOutput, Radiocraft.id("repeater_autopatch"));
+        // The DTMF encoder: a row of keys on a tone board, wired to the radio (maintainer, 2026-11-04).
+        ShapedRecipeBuilder.shaped(RecipeCategory.MISC, RadiocraftItems.DTMF_ENCODER.get(), 1)
+                .pattern("UUU")
+                .pattern("WBW")
+                .define('U', Items.STONE_BUTTON)
+                .define('W', RadiocraftItems.WIRE.get())
+                .define('B', RadiocraftItems.HF_CIRCUIT_BOARD.get())
+                .unlockedBy("has_hf_circuit_board", has(RadiocraftItems.HF_CIRCUIT_BOARD.get()))
+                .save(recipeOutput);
+        // The DTMF decoder: the tone board feeding a comparator (the code match), redstone torches its lamps and output.
+        ShapedRecipeBuilder.shaped(RecipeCategory.MISC, RadiocraftItems.DTMF_DECODER.get(), 1)
+                .pattern("WBW")
+                .pattern("RCR")
+                .define('W', RadiocraftItems.WIRE.get())
+                .define('B', RadiocraftItems.HF_CIRCUIT_BOARD.get())
+                .define('R', Items.REDSTONE_TORCH)
+                .define('C', Items.COMPARATOR)
+                .unlockedBy("has_hf_circuit_board", has(RadiocraftItems.HF_CIRCUIT_BOARD.get()))
+                .save(recipeOutput);
         // The weather station: copper cups, a quartz radiation shield, a comparator for the electronics, a bars mast mount.
         ShapedRecipeBuilder.shaped(RecipeCategory.MISC, RadiocraftItems.WEATHER_STATION.get(), 1)
                 .pattern("C C")
@@ -1100,6 +1143,19 @@ public class RadiocraftRecipesProvider extends RecipeProvider {
                         .define('M', RadiocraftItems.HAND_MICROPHONE.get())
                         .define('B', ItemTags.BUTTONS)
                         .unlockedBy("has_radio_speaker", has(RadiocraftItems.RADIO_SPEAKER.get())));
+
+        // The APRS module: a compass for its GPS on a circuit board, in copper. Crafted with a handheld it goes inside.
+        ShapedRecipeBuilder.shaped(RecipeCategory.MISC, RadiocraftItems.APRS_MODULE.get())
+                .pattern("WPW")
+                .pattern("CBC")
+                .define('W', RadiocraftItems.WIRE.get())
+                .define('P', Items.COMPASS)
+                .define('C', Items.COPPER_INGOT)
+                .define('B', RadiocraftItems.HF_CIRCUIT_BOARD.get())
+                .unlockedBy("has_vhf_handheld", has(RadiocraftItems.VHF_HANDHELD.get()))
+                .save(recipeOutput);
+        net.minecraft.data.recipes.SpecialRecipeBuilder.special(com.arrl.radiocraft.common.crafting.AprsModuleInstallRecipe::new)
+                .save(recipeOutput, Radiocraft.id("vhf_handheld_aprs_module"));
     }
 
     /** Every pure crystal, raw or encased, of any band. */

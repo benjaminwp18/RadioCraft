@@ -1,6 +1,10 @@
 package com.arrl.radiocraft.client.screens.widgets;
 
+import com.arrl.radiocraft.common.init.RadiocraftSoundEvents;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.client.sounds.SoundManager;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.network.chat.CommonComponents;
@@ -19,6 +23,7 @@ public class ToggleButton extends AbstractWidget {
 	private final OnInteract onPress;
 
 	public boolean isToggled;
+	private boolean powerClick = false;
 
 	public ToggleButton(boolean isToggled, int x, int y, int width, int height, int u, int v, ResourceLocation texLocation, int texWidth, int texHeight, OnInteract onPress) {
 		super(x, y, width, height, CommonComponents.EMPTY);
@@ -45,6 +50,25 @@ public class ToggleButton extends AbstractWidget {
 			isToggled = !isToggled;
 			onPress.execute(this);
 		}
+	}
+
+	/** Makes this a power button: it latches in and pops out ({@link #playPowerClick}) instead of the menu click. */
+	public ToggleButton withPowerClick() {
+		powerClick = true;
+		return this;
+	}
+
+	@Override
+	public void playDownSound(@NotNull SoundManager handler) {
+		if(powerClick)
+			playPowerClick(!isToggled); // Played before the click toggles it: not toggled yet means it is going in.
+		else
+			super.playDownSound(handler);
+	}
+
+	/** A power button's click: latching in to turn on ({@code turningOn}), popping out to turn off. */
+	public static void playPowerClick(boolean turningOn) {
+		Minecraft.getInstance().getSoundManager().play(SimpleSoundInstance.forUI((turningOn ? RadiocraftSoundEvents.POWER_IN : RadiocraftSoundEvents.POWER_OUT).get(), 1.0F));
 	}
 
 	@Override

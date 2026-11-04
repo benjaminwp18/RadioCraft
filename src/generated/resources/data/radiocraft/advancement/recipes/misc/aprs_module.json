@@ -1,0 +1,32 @@
+{
+  "parent": "minecraft:recipes/root",
+  "criteria": {
+    "has_the_recipe": {
+      "conditions": {
+        "recipe": "radiocraft:aprs_module"
+      },
+      "trigger": "minecraft:recipe_unlocked"
+    },
+    "has_vhf_handheld": {
+      "conditions": {
+        "items": [
+          {
+            "items": "radiocraft:vhf_handheld"
+          }
+        ]
+      },
+      "trigger": "minecraft:inventory_changed"
+    }
+  },
+  "requirements": [
+    [
+      "has_the_recipe",
+      "has_vhf_handheld"
+    ]
+  ],
+  "rewards": {
+    "recipes": [
+      "radiocraft:aprs_module"
+    ]
+  }
+}

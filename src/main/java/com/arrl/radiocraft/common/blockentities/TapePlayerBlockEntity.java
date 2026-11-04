@@ -71,6 +71,8 @@ public class TapePlayerBlockEntity extends BlockEntity implements MenuProvider, 
 	private volatile boolean recording;
 	private long recordStart;
 	private int recordedFrames;
+	/** Who spoke onto the tape, for the moderation log. Under recordBuffer's lock. */
+	private final java.util.LinkedHashSet<UUID> recordSpeakers = new java.util.LinkedHashSet<>();
 
 	@Nullable
 	private LocationalAudioChannel channel;
@@ -154,6 +156,7 @@ public class TapePlayerBlockEntity extends BlockEntity implements MenuProvider, 
 			java.util.Arrays.fill(recordBuffer, (short)0);
 			recordedFrames = 0;
 			recordStart = System.nanoTime();
+			recordSpeakers.clear();
 		}
 		recording = true;
 		state = STATE_RECORDING;
@@ -284,6 +287,8 @@ public class TapePlayerBlockEntity extends BlockEntity implements MenuProvider, 
 	/** Keys every radio touching the player or on its data wire, as its push-to-talk would. */
 	private void keyRadios(ServerLevel level) {
 		releaseRadios();
+		TapeContents contents = contents(); // The moderation log keeps a pointer to a player tape, a note for a server tape.
+		com.arrl.radiocraft.common.moderation.ModerationHooks.tapePlaying(voiceId, worldPosition, contents.recordingId(), contents.track());
 		for(RadioBlockEntity radio : com.arrl.radiocraft.common.be_networks.DataWire.linked(level, worldPosition, RadioBlockEntity.class)) {
 			radio.setPTTDown(true);
 			keyed.add(radio);
@@ -327,6 +332,8 @@ public class TapePlayerBlockEntity extends BlockEntity implements MenuProvider, 
 			for(int i = 0; i < FRAME && i < rawAudio.length; i++)
 				recordBuffer[from + i] = (short)Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, recordBuffer[from + i] + rawAudio[i]));
 			recordedFrames = Math.max(recordedFrames, slot + 1);
+			if(sourcePlayer != null && recordSpeakers.size() < 32)
+				recordSpeakers.add(sourcePlayer);
 		}
 	}
 
@@ -340,14 +347,18 @@ public class TapePlayerBlockEntity extends BlockEntity implements MenuProvider, 
 	private void finishRecording() {
 		recording = false;
 		short[] audio;
+		List<UUID> speakers;
 		synchronized(recordBuffer) {
 			audio = java.util.Arrays.copyOf(recordBuffer, recordedFrames * FRAME);
+			speakers = List.copyOf(recordSpeakers);
 		}
 		if(audio.length == 0 || !(level instanceof ServerLevel serverLevel) || tape.isEmpty())
 			return;
 		UUID id = contents().recordingId() != null ? contents().recordingId() : UUID.randomUUID();
 		TapeRecordings.save(serverLevel.getServer(), id, audio);
-		tape.set(RadiocraftDataComponent.TAPE_CONTENTS.get(), contents().withRecording(id, Math.round(audio.length / (float)RadioVoiceProcessor.SAMPLE_RATE)));
+		int seconds = Math.round(audio.length / (float)RadioVoiceProcessor.SAMPLE_RATE);
+		tape.set(RadiocraftDataComponent.TAPE_CONTENTS.get(), contents().withRecording(id, seconds));
+		com.arrl.radiocraft.common.moderation.ModerationHooks.tapeRecorded(serverLevel, worldPosition, id, seconds, speakers); // For the moderation log's tape search.
 	}
 
 	// -------------------- STATUS --------------------

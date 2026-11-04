@@ -79,6 +79,8 @@ public class RadiocraftTabs {
         output.accept(RadiocraftItems.TELEPHONE.get());
         output.accept(RadiocraftItems.PABX.get());
         output.accept(RadiocraftItems.PHONE_PA.get());
+        output.accept(RadiocraftItems.REPEATER_AUTOPATCH.get());
+        output.accept(RadiocraftItems.FIELD_PHONE.get());
 
         // Speakers (released 2026-10-27)
         RadiocraftItems.DESK_SPEAKERS.values().forEach(item -> output.accept(item.get()));
@@ -104,6 +106,11 @@ public class RadiocraftTabs {
         output.accept(RadiocraftItems.ANTENNA_SPLITTER.get());
         output.accept(RadiocraftItems.ANTENNA_SWITCH.get());
         output.accept(RadiocraftItems.WIRE_JUNCTION.get());
+        output.accept(RadiocraftItems.DTMF_ENCODER.get()); // Remote control over the air, a repeater's or anyone's.
+        output.accept(RadiocraftItems.DTMF_DECODER.get());
+
+        // Server admins: not craftable
+        output.accept(RadiocraftItems.MODERATION_COMPUTER.get()); // The moderation log's screen, locked to whoever places it.
 
         // APRS and packet
         output.accept(RadiocraftItems.RADIO_INTERFACE.get());
@@ -155,6 +162,7 @@ public class RadiocraftTabs {
         RadiocraftItems.COLOURED_WIRE.values().forEach(wire -> output.accept(wire.get()));
 
         RadiocraftItems.VHF_HANDHELD_VARIANTS.values().forEach(output::accept);
+        output.accept(RadiocraftItems.APRS_MODULE.get());
 
     }).build();
 

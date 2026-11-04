@@ -56,7 +56,9 @@ public class RadiocraftBlockTagsProvider extends BlockTagsProvider {
                 .add(RadiocraftBlocks.MICROWAVE_RADIO.get())
                 .add(RadiocraftBlocks.DIRECTION_FINDER.get(), RadiocraftBlocks.MAP_DIRECTION_FINDER.get())
                 .add(RadiocraftBlocks.APRS_TERMINAL.get()) // The H19 is mains fed (TerminalPowerGameTests).
-                .add(RadiocraftBlocks.PABX.get());
+                .add(RadiocraftBlocks.DESK_CHARGER.get()) // Charges from the wire (DeskChargerNetworkObject).
+                .add(RadiocraftBlocks.PABX.get())
+                .add(RadiocraftBlocks.FIELD_PHONE.get()); // Needs none, but is louder and takes more phones with it.
 
         // Data wire (2026-10-30) links these to radios and to each other; power wire no longer does. Radios take it too
         // (WireBlock#isDataConnection).
@@ -66,13 +68,15 @@ public class RadiocraftBlockTagsProvider extends BlockTagsProvider {
                 .add(RadiocraftBlocks.WALL_SPEAKER.get(), RadiocraftBlocks.LOUDSPEAKER.get()) // The wire is their speaker line.
                 .add(RadiocraftBlocks.DESK_SPEAKERS.values().stream().map(net.neoforged.neoforge.registries.DeferredHolder::get).toArray(Block[]::new)) // For a Phone PA.
                 .add(RadiocraftBlocks.LARGE_SPEAKER.get(), RadiocraftBlocks.PREMIUM_SPEAKER_MARBLE.get(), RadiocraftBlocks.PREMIUM_SPEAKER_IRON.get(), RadiocraftBlocks.PREMIUM_SPEAKER_GOLD.get())
-                .add(RadiocraftBlocks.PHONE_PA.get())
+                .add(RadiocraftBlocks.PHONE_PA.get(), RadiocraftBlocks.FIELD_PHONE.get()) // The field phone's line.
+                .add(RadiocraftBlocks.REPEATER_AUTOPATCH.get()) // To its PABX and its repeater.
                 .add(RadiocraftBlocks.MICROWAVE_RADIO.get()) // The line to the stations it serves and its site's other radios:
                 .add(RadiocraftBlocks.TELEPHONE.get(), RadiocraftBlocks.PABX.get(), RadiocraftBlocks.APRS_TERMINAL.get(),
                         RadiocraftBlocks.DIRECTION_FINDER.get(), RadiocraftBlocks.MAP_DIRECTION_FINDER.get())
                 .add(RadiocraftBlocks.RADIO_FAXES.values().stream().map(net.neoforged.neoforge.registries.DeferredHolder::get).toArray(Block[]::new))
                 .add(RadiocraftBlocks.RADIO_INTERFACE.get(), RadiocraftBlocks.TELETYPE.get(), RadiocraftBlocks.WEFAX_RECEIVER.get(),
-                        RadiocraftBlocks.TAPE_PLAYER.get(), RadiocraftBlocks.IONOSPHERIC_PROCESSOR.get());
+                        RadiocraftBlocks.TAPE_PLAYER.get(), RadiocraftBlocks.IONOSPHERIC_PROCESSOR.get())
+                .add(RadiocraftBlocks.DTMF_DECODER.get(), RadiocraftBlocks.DTMF_ENCODER.get());
 
         // Signal sources that only report a reading: Another Weather Mod's instruments re-read the weather every second, and
         // in a storm each new reading popped a nearby radio with interference (2026-10-30).
@@ -87,6 +91,7 @@ public class RadiocraftBlockTagsProvider extends BlockTagsProvider {
 
         tag(RadiocraftTags.Blocks.QUIET_SIGNAL_SOURCES)
                 .add(RadiocraftBlocks.WEFAX_RECEIVER.get())
+                .add(RadiocraftBlocks.DTMF_DECODER.get()) // It sits against its radio: its output must not crackle in it.
                 .addOptional(ResourceLocation.fromNamespaceAndPath("anotherweathermod", "wind_vane"))
                 .addOptional(ResourceLocation.fromNamespaceAndPath("anotherweathermod", "barometer"))
                 .addOptional(ResourceLocation.fromNamespaceAndPath("anotherweathermod", "thermometer"))

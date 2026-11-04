@@ -43,9 +43,14 @@ public class RadiocraftMenuTypes {
 	public static final Supplier<MenuType<com.arrl.radiocraft.common.menus.WefaxReceiverMenu>> WEFAX_RECEIVER = MENU_TYPES.register("wefax_receiver", () -> IMenuTypeExtension.create(com.arrl.radiocraft.common.menus.WefaxReceiverMenu::new));
 	public static final Supplier<MenuType<com.arrl.radiocraft.common.menus.PabxMenu>> PABX = MENU_TYPES.register("pabx", () -> IMenuTypeExtension.create(com.arrl.radiocraft.common.menus.PabxMenu::new));
 	public static final Supplier<MenuType<com.arrl.radiocraft.common.menus.PhonePaMenu>> PHONE_PA = MENU_TYPES.register("phone_pa", () -> IMenuTypeExtension.create(com.arrl.radiocraft.common.menus.PhonePaMenu::new));
+	public static final Supplier<MenuType<com.arrl.radiocraft.common.menus.ModerationComputerMenu>> MODERATION_COMPUTER = MENU_TYPES.register("moderation_computer",
+			() -> IMenuTypeExtension.create(com.arrl.radiocraft.common.menus.ModerationComputerMenu::new));
+	public static final Supplier<MenuType<com.arrl.radiocraft.common.menus.RepeaterAutopatchMenu>> REPEATER_AUTOPATCH = MENU_TYPES.register("repeater_autopatch", () -> IMenuTypeExtension.create(com.arrl.radiocraft.common.menus.RepeaterAutopatchMenu::new));
 	public static final Supplier<MenuType<TelephoneMenu>> TELEPHONE = MENU_TYPES.register("telephone", () -> IMenuTypeExtension.create(TelephoneMenu::new));
 	public static final Supplier<MenuType<com.arrl.radiocraft.common.menus.IonosphericProcessorMenu>> IONOSPHERIC_PROCESSOR = MENU_TYPES.register("ionospheric_processor",
 			() -> IMenuTypeExtension.create(com.arrl.radiocraft.common.menus.IonosphericProcessorMenu::new));
+	public static final Supplier<MenuType<com.arrl.radiocraft.common.menus.DtmfDecoderMenu>> DTMF_DECODER = MENU_TYPES.register("dtmf_decoder", () -> IMenuTypeExtension.create(com.arrl.radiocraft.common.menus.DtmfDecoderMenu::new));
+	public static final Supplier<MenuType<com.arrl.radiocraft.common.menus.DtmfEncoderMenu>> DTMF_ENCODER = MENU_TYPES.register("dtmf_encoder", () -> IMenuTypeExtension.create(com.arrl.radiocraft.common.menus.DtmfEncoderMenu::new));
 	public static final Supplier<MenuType<VHFRepeaterMenu>> VHF_REPEATER = MENU_TYPES.register("vhf_repeater", () -> IMenuTypeExtension.create(VHFRepeaterMenu::new));
 
 }

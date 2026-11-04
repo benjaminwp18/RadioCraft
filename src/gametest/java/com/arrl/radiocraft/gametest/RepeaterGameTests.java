@@ -140,6 +140,28 @@ public class RepeaterGameTests {
                 .thenSucceed();
     }
 
+    /** DTMF from an encoder on A goes in on the repeater's input and out on its output, to a decoder on B. */
+    @GameTest(template = GameTestUtil.EMPTY, timeoutTicks = 300, batch = BATCH)
+    public static void repeatsDtmf(GameTestHelper helper) {
+        buildWithDuplexer(helper);
+        helper.setBlock(STATION_A.north(), RadiocraftBlocks.DTMF_ENCODER.get());
+        helper.setBlock(STATION_B.north(), RadiocraftBlocks.DTMF_DECODER.get());
+        GameTestUtil.blockEntity(helper, STATION_B.north(), com.arrl.radiocraft.common.blockentities.DtmfDecoderBlockEntity.class).setCode("42");
+        helper.startSequence()
+                .thenWaitUntil(() -> helper.assertTrue(repeater(helper, REPEATER).hasDuplexer(), "Repeater does not see its duplexer"))
+                .thenExecute(() -> setUp(helper, 146_340, 146_940)) // On the 20 kHz channel step: the repeater snaps to it.
+                .thenIdle(12) // B looks for its decoder every 10 ticks.
+                .thenExecute(() -> helper.assertTrue(GameTestUtil.blockEntity(helper, STATION_A.north(), com.arrl.radiocraft.common.blockentities.DtmfEncoderBlockEntity.class).send("42") == 1,
+                        "A would not send"))
+                .thenWaitUntil(() -> helper.assertTrue(GameTestUtil.blockEntity(helper, STATION_B.north(), com.arrl.radiocraft.common.blockentities.DtmfDecoderBlockEntity.class).getMatches() == 1,
+                        "B's decoder heard " + GameTestUtil.blockEntity(helper, STATION_B.north(), com.arrl.radiocraft.common.blockentities.DtmfDecoderBlockEntity.class).getHeard()
+                                + "; now " + helper.getLevel().getGameTime() + ", repeater heard at " + repeater(helper, REPEATER).getLastSignalGameTime()
+                                + " (" + repeater(helper, REPEATER).getLastSignalStrength() + "), B heard at " + station(helper, STATION_B).getLastSignalGameTime()
+                                + " (" + station(helper, STATION_B).getLastSignalStrength() + "), A sending " + station(helper, STATION_A).isSendingData()))
+                .thenWaitUntil(() -> helper.assertFalse(repeater(helper, REPEATER).isTransmitting(), "Repeater is still transmitting")) // Off the air before the next test.
+                .thenSucceed();
+    }
+
     /**
      * The repeater's tail: after the user lets go it keeps its transmitter up for its hang time (carrier, then the
      * courtesy beep), so B still hears it, and only then drops (where listeners hear their squelch tail).

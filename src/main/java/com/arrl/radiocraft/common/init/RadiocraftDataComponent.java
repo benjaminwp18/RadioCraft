@@ -72,6 +72,22 @@ public class RadiocraftDataComponent {
                     .networkSynchronized(com.arrl.radiocraft.common.datacomponents.ManpackState.STREAM_CODEC)
     );
 
+    /** A handheld's memory channels and whether it runs on one (see {@link HandheldMemory}). */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<HandheldMemory>> HANDHELD_MEMORY = DATA_COMPONENTS.registerComponentType(
+            "handheld_memory",
+            builder -> builder
+                    .persistent(HandheldMemory.CODEC)
+                    .networkSynchronized(HandheldMemory.STREAM_CODEC)
+    );
+
+    /** The APRS module in a handheld, with what it has heard (see {@link HandheldAprs}); absent without the module. */
+    public static final DeferredHolder<DataComponentType<?>, DataComponentType<HandheldAprs>> HANDHELD_APRS = DATA_COMPONENTS.registerComponentType(
+            "handheld_aprs",
+            builder -> builder
+                    .persistent(HandheldAprs.CODEC)
+                    .networkSynchronized(HandheldAprs.STREAM_CODEC)
+    );
+
     public static final DeferredHolder<DataComponentType<?>, DataComponentType<HandheldRadioState>> HANDHELD_RADIO_STATE_COMPONENT = DATA_COMPONENTS.registerComponentType(
             "handheld_radio_state",
             builder -> builder

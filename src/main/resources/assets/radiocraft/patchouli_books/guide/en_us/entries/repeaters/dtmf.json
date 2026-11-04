@@ -1,0 +1,27 @@
+{
+  "name": "DTMF Touch Tones",
+  "icon": "radiocraft:dtmf_decoder",
+  "category": "radiocraft:repeaters",
+  "sortnum": 3,
+  "pages": [
+    {
+      "type": "patchouli:text",
+      "text": "$(thing)DTMF$() is the touch tone of a telephone keypad: each key is two tones at once. Sent over a radio, a code of keys works switches far away: a repeater passes the tones on like a voice.$(br2)On a $(item)VHF Handheld$(), press # to open the $(thing)DTMF$() page, then type the keys (on the keypad or the keyboard; the down arrow deletes one). ENTER sends them all, and the radio keys up by itself."
+    },
+    {
+      "type": "patchouli:spotlight",
+      "item": "radiocraft:dtmf_encoder",
+      "text": "Put the $(item)DTMF Encoder$() against a radio, or on its $(l:radiocraft:radios/data_wire)data wire$(/l). Key in a number on its pad and press SEND: every radio linked to it that is on and can transmit sends it, on its transmit frequency with its CTCSS tone. REDIAL brings back the last number, SEND with nothing keyed in sends it again, and so does a $(thing)redstone signal$() coming on beside the encoder."
+    },
+    {
+      "type": "patchouli:spotlight",
+      "item": "radiocraft:dtmf_decoder",
+      "text": "The $(item)DTMF Decoder$() listens through the radio it is linked to. Set its code (0-9, A-D, * and #). The $(thing)red$() lamp lights while the start of the code is coming in; when all of it has, the $(thing)green$() lamp lights for 5 seconds and the decoder pulses its redstone, or toggles it on and off."
+    },
+    {
+      "type": "patchouli:text",
+      "title": "Weak signals",
+      "text": "Every key gets through on its own. On a strong signal they all do; on a weak or fading one some go missing, and the code does not match. Send it again, or get closer.$(br2)A half sent code is forgotten after 5 seconds without a key. A decoder on an SSB radio tuned off frequency hears the tones at the wrong pitch, and copies nothing."
+    }
+  ]
+}

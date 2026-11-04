@@ -8,6 +8,253 @@ writes back here: `- [ ]` not tested, `- [x]` passed, `- [!]` needs work, with `
 `![caption](testing_shots/...)` screenshots indented under the item. Whoever picks up a `[!]` item fixes it (or moves
 it to [todo.md](../todo.md)), then sets it back to `[ ]` for the next playtest.
 
+## Radio Moderation Computer (added 2026-11-04)
+
+Turn on `moderation_record_radio` (and `moderation_record_proximity` for the Proximity tab) in radiocraft-server.toml
+and restart. As an operator, take the Radio Moderation Computer from the creative tab (after the DTMF decoder) and
+place it. Simple Voice Chat must be connected for listening and playback. Try GUI scales 2, 3 and 4, and a small
+window at scale 4.
+
+- [ ] The block: a beige PC (desktop case, CRT with a teal desktop, keyboard) facing the player; it breaks with a
+  pickaxe and drops itself; the creative tab has it and there is no recipe. Its tooltip says what it is for.
+- [ ] Placing it as an operator then right clicking opens the screen; the H19 fan spins up quietly while it is open
+  and stops when it closes. A second player (not added) right clicking gets "Locked: this moderation computer belongs
+  to ..." over the hotbar. A non-operator placing one is told it has no owner; they cannot open it.
+- [ ] The window: grey Windows 98 panels with bevels, a navy-to-blue title bar with the title in white, a close box
+  that presses in and closes it, tabs along the top (the picked one stands taller and joins the panel), a status bar
+  (REC lamp and "REC: radio on, voice chat off", storage "x MB of 5.0 GB, kept 7 days", messages). It fits the window
+  at every GUI scale and is drawn smaller rather than cut off on a small window; JEI's item list does not cover it.
+- [ ] Controls: buttons press in while held and act on release; text boxes are sunken white with a blinking caret,
+  take typing (the inventory key does not close the screen while typing), paste, arrows, home/end; each key clicks
+  quietly (H19 key). Dropdowns open a list (upwards near the bottom), close on a click away. Lists have raised column
+  headers, a navy selection, a scrollbar with buttons and a draggable thumb, and scroll with the wheel.
+- [ ] Live: a player talking on a handheld shows within half a second (talker and callsign, Voice, 146.5200 FM, radio,
+  position, how many hear, time on the air) and drops off a second after they stop. Pick the row and Listen to talker:
+  their voice comes through clean, the lamp and "Listening to X" show, the hotbar says "On air: ...", and the H19 bell
+  rings (quietly, at most every few seconds) each time they key up again. Stop listening ends it.
+- [ ] Live, "Hear what they hear": pick a player who holds a handheld (or stands by a base station) and press it; you
+  hear what their radios receive, clean, with "Heard by X: Speaker, 146.520 MHz" over the hotbar; nothing they do not
+  receive. Leaving the screen keeps listening; Stop listening (or logging out) ends it.
+- [ ] Archive: Search lists the last day's transmissions, newest first, 30 a page with < > paging and "1-30 of N".
+  Filters each narrow it: player as talker/heard/either, words (name, callsign, text), MHz from/to, kind, time range,
+  flagged only, radio x, y, z, world; Clear resets them. Bad MHz or position says so in the status bar. Clicking a
+  column header sorts the page; flagged rows are red.
+- [ ] Archive detail: picking a row shows time, kind, talkers, frequency/mode/band/tone, radio and position, antenna,
+  every hearer with strength %, text or CW text, data packets, repeats #id, tape; the wheel scrolls it. Play plays the
+  over through voice chat with the progress bar and time filling; Stop stops it; closing the screen stops it. "As heard
+  by" a weak FM hearer sounds hissy and drops out; an SSB hearer sounds band-limited. Flag turns the row red and the
+  button into Unflag; Export shows "Exported 1 file(s): <path>" and the .opus plays; Export flagged exports them all.
+- [ ] Map: radios that sent (red) and only heard (blue) on the air in the world and time range, over the H19-style
+  terrain in the world you are in (a grid elsewhere), your position as a white cross. Hover shows the radio, position,
+  last talker, frequency, counts and last time; drag pans (the terrain repaints on release), the wheel zooms, Fit fits;
+  pick one and Show in Archive lists its transmissions.
+- [ ] Links: after a few overs between players, the graph shows them round a circle (players navy, lone radios grey)
+  with lines thicker for busier links and a small square at the hearing end; hovering a node shows only its links in
+  red. The table sorts by From, To or Times. "Voice chat instead of radio" switches to proximity links.
+- [ ] Tapes: a tape recorded on a tape player and aired lists with when, length, where, speakers, times aired and when
+  last; Play plays the tape through voice chat with the progress bar.
+- [ ] Proximity: "On now" lists players talking in plain voice chat; Listen to speaker hears their voice chat wherever
+  you are. "Archive" lists and plays past voice chat (no MHz or kind filters). With proximity recording off it says so.
+- [ ] Access: owner and admins listed; the owner adds an admin by name (online or known) who can then open it, removes
+  them, and hands it over (staying on as an admin); an admin sees the buttons greyed with "Only the owner can change who
+  has access". An admin removed while the screen is open is shut out at the next request. The audit log lists opens,
+  listens, plays, exports, flags and admin changes with who and when.
+- [ ] `/radio moderation unlock x y z` (op 3) says it unlocked the computer and whose it was; the old owner is locked
+  out and the next operator to use it owns it.
+- [ ] REC on radio screens: with `moderation_record_radio` on, every block radio screen shows a small red "REC" with a
+  dot in its top right corner, and the handheld's LCD shows REC in its top line (left of the APRS marks, the memory
+  name shortened to fit); with it off, none.
+
+## Moderation log, server side (added 2026-11-04; the moderation computer's screen comes later)
+
+Turn on `moderation_record_radio` (and for the last items `moderation_record_proximity`) in radiocraft-server.toml
+and restart. The log is under `<world>/radiocraft/moderation`; `/radio moderation status|list|flag|unflag|export|purge`
+(op level 3) looks at it until the computer has a screen.
+
+- [ ] Joining with recording on shows the gold notice ("This server records voice sent over radios for moderation
+  (kept 7 days)."); with `moderation_notice = false`, or recording off, nothing.
+- [ ] Two players with real microphones: one talks on a handheld, the other hears on a handheld and at a base station
+  (stand within 16 blocks of it). `/radio moderation list` shows one player_voice line for the over, heard by the
+  handheld's holder, the base station and the player standing at it. Talking into a desk mic or a base station's hand
+  mic gives one line per radio keyed (each is its own transmission).
+- [ ] `/radio moderation export <id>` writes an .opus file to the exports folder: it plays in VLC/foobar/a browser,
+  sounds like the player (clean, not radio-processed) and keeps the pauses inside the over.
+- [ ] Through a repeater: the talker's line (heard by the repeater), plus a "repeated" line linked to it, heard by the
+  stations on the output. The repeater's beep, hang time and ID make no lines.
+- [ ] A player tape played into a radio makes a "tape" line (no audio of its own; playback reads the tape file);
+  recording over that tape afterwards leaves a copy in moderation/tapes. A server tape makes a "server_tape" line
+  naming the file. Recording a tape makes a "tape_recording" line naming who spoke onto it.
+- [ ] RTTY from a teletype, APRS from a handheld and a fax each make a "data" line with the packets, not audio; the
+  RTTY line names the typist. CW keyed from a radio screen makes a "cw" line with the decoded text and the keyer.
+- [ ] A commercial station tuned in makes a "commercial" line (program and callsign); one nobody listens to makes none.
+- [ ] `moderation_metadata_only = true`: lines still appear with hearers, but `list` shows no frames for voice.
+- [ ] Proximity: two players talking without radios make "proximity" lines (not in `list`, which shows radio only;
+  check the index file in moderation/index), with the other player as a hearer.
+- [ ] No audible change anywhere with recording on: radio voice, handhelds and voice chat sound and time exactly as
+  before, also with ten players talking at once (the log only copies packets; watch for "writer is behind" in the log).
+
+## New sounds: H19, power buttons, FM static, redstone RFI (added 2026-11-04, maintainer's and S0lver's sounds)
+
+- [ ] H19 whirr (`h19_whirr_2`) loops at the terminal whenever it has power, screen open or not; it spins up as power
+  comes on, runs down when power goes, and fades with distance (about 12 blocks). The screen no longer plays its own;
+  with the screen open the whirr rises to twice its room volume, and eases back down when it closes.
+- [ ] H19 bell rings at the start of the boot, and at the terminal when a message comes in (message buzzer on). The
+  contact buzzer still beeps.
+- [ ] H19 keys use `h19_type`; characters coming up on the screen (boot printing, a page drawing in) use it much
+  quieter. Check it is not a wall of clicks during the boot's fast ASCII art.
+- [ ] SETUP page: a dim "SOUNDS BY S0LVER" in the bottom right; hovering lights it, clicking rings the bell.
+- [ ] Power buttons latch in (`power_in`) turning on and pop out (`power_out`) turning off, instead of the menu click:
+  every HF/QRP/VHF radio, receivers, the all-band, the handheld, the repeater, the manpack.
+- [ ] FM static is the recording (`fm_static`) now: the squelch tail on VHF radios, handhelds, the all-band on 2m FM,
+  and the hiss and dropouts of a fading FM signal. Same loudness as before; two radios side by side do not hiss in step.
+  A blown VHF radio keyed roars with it too.
+- [ ] Redstone RFI: each burst plays one of four recordings (`redstone_rfi` to `_4`); flip a lever a few times, a
+  second apart, and hear them change. Variants 3 and 4 are turned down to match the first two.
+
+## VHF handheld: memory channels, APRS module, held model, no receive while transmitting (added 2026-11-04)
+
+- [ ] Memory store: hold MW (about half a second) and "STORE M0" shows (the first free slot), with "UNUSED" or the
+  stored channel's frequency and markers in small text under it. The arrows or a number key change the slot; ENTER
+  stores the frequency, tones and offset ("STORED M3"); tapping MW backs out without storing.
+- [ ] Channel names (added 2026-11-04): after ENTER on the store page, NAME M3 opens with the old name; type up to 7
+  characters on the keyboard (E types an E), Backspace or the down arrow deletes, ENTER saves ("M3 HOME"), MW backs
+  out. * opens SETUP: DISPLAY steps NAME, FREQ, CH NO; NAME CH renames the channel in use ("MEM MODE ONLY" on VFO). On
+  a memory channel the main display shows big the name (falling back to the frequency if it has none), the frequency
+  (the name small at the top) or "CH 3" (the frequency small at the top). The offset and tone marks now sit on the
+  bottom line beside TX/RX.
+- [ ] Memory mode: tap MW. With nothing stored it shows "NO MEM"; otherwise the radio goes to a stored channel and
+  the second line shows "M3" before the offset/tone markers. The arrows step through the stored channels only, a
+  number key jumps to that channel ("M5 UNUSED" if empty). Tap MW again: "VFO", and the frequency, tones and offset
+  you had before come back. Close and reopen the screen, and log out and in: the channels and the mode stay.
+- [ ] APRS without the module: APRS shows "NO APRS". Craft a handheld with an APRS module (shapeless, any slots): the
+  handheld keeps its charge, frequency and memory channels, and its tooltip says "APRS module installed". JEI shows
+  no recipe for that combination (it is a special recipe): check that is acceptable, or ask for a JEI info page.
+- [ ] LCD (redrawn 2026-11-04 as a monochrome dot-matrix LCD; the old text screen is backed up in
+  `E:\Radiocraft-backups\2026-11-04-handheld-text-screen`): grey-green glass, dark 3x5 pixel text, the frequency in
+  big seven-segment digits with the unlit segments faintly showing, headings as inverted bars. The top line shows VFO
+  or a boxed M3, offset and tone letters, a B while beaconing, a blinking envelope for an unread message and a battery
+  icon; the bottom line a boxed TX or RX, and APRS when the module is in. Any key or click lights the backlight for 5
+  seconds. Check every page for text running into other text, at GUI scales 2, 3 and 4.
+- [ ] APRS menu: APRS opens it; three lines show at a time, the chosen one inverted, small arrows when there are more
+  above or below; ENTER opens or toggles; APRS goes back up a level and out.
+- [ ] Beacon settings: APRS > BEACON lists BEACON (on/off), ICON (cycles house, portable, car, ...), CALL (your
+  callsign with an SSID: ENTER steps -1 to -15 and none; default -7), EVERY (30S, 1M, 2M, 5M, 10M, 30M) and TEXT.
+  TEXT opens a comment editor: type on the keyboard (E types an E, it does not close the screen), Backspace deletes,
+  ENTER saves, APRS cancels. An H19 then shows your beacon with that icon, comment and callsign. A message from an H19
+  to your plain callsign (no SSID) still reaches the handheld. CALL shows NONE until you have a callsign.
+- [ ] Stations: with an H19 station on 144.390 beaconing near you, it appears under STATIONS (nearest first, distance
+  and n/N in small text). ENTER: the callsign, X Y Z in small text, the distance, and a compass on the right whose
+  needle points at the station as you turn (up is straight ahead). Walk round it and check the needle follows.
+- [ ] Messages: send the handheld's callsign a message from an H19. The holder hears a chime, the DATA lamp blinks,
+  MESSAGES says "1 NEW", the entry shows "<CALL*". ENTER opens it: the text scrolls along the second line again and
+  again, and the lamp stops blinking. The H19 shows the message as SENT (acked).
+- [ ] Send: SEND MSG, pick a canned text with the arrows, ENTER, pick ALL or a station, ENTER: "MSG SENT". The H19
+  gets it; for a station the entry later shows ACK. The burst is heard on 144.390 and the mic is cut while it goes.
+- [ ] Beacon: BEACON ON sends a beacon right away and then at the chosen interval (never faster than the server's
+  `handheld_aprs_min_beacon_seconds`, 30 by default); the H19 lists you at your position.
+- [ ] Mute: with MUTE ON and the handheld tuned to 144.390, packet bursts are silent but people talking on 144.390
+  still come through. MUTE OFF: the bursts are heard again.
+- [ ] Held model (`models/item/vhf_handheld_3d.json`, placeholder): in first and third person, the radio stands
+  upright with the keypad, screen and speaker toward you, the antenna on top left and the ribbed battery underneath.
+  The hotbar, inventory and item frames still show the flat icon. Tune the `display` rotations if it sits badly in
+  the hand.
+- [ ] Inventory icon: the handheld shows the 3D model in the hotbar, inventory and item frames (slightly turned, the
+  antenna inside the slot). The poor and pure crystal handhelds now look the same as the good one there. In the hand
+  it is a quarter smaller than before.
+- [ ] Desk charger as a radio (added 2026-11-04): a switched-on handheld in the cradle still uses its battery (on a
+  charger with no power its charge goes down and it switches off when flat; on a powered one it charges faster than
+  it drains). It hears its frequency through a speaker at the charger (about 12 blocks), with its RX tone and the
+  APRS mute; its screen backlight comes on with a boxed RX while it hears something. Its APRS module beacons from the
+  charger under the callsign it last had in your hands, and messages sent to you while it sits there are on it when
+  you pick it up. It cannot be keyed to talk there.
+- [ ] Live screen and RX LED on the model (added 2026-11-04): a switched-on handheld shows its LCD (the main display)
+  on its model in your hand (first and third person), on your belt, in the inventory and hotbar icon, and in a desk
+  charger; switched off, the screen is plain. While it hears something the screen's backlight comes on, RX shows
+  bottom left and the green LED on its face lights, glowing in the dark (NeoForge emissive quads,
+  `models/item/vhf_handheld_rx_led.json`). In the charger the status reads CHG while charging. Check many handhelds
+  in one inventory do not slow the game, and that the screen and LED do not flicker or z-fight.
+- [ ] Desk charger by hand: sneak and use it holding a handheld: the handheld goes into the cradle (one already there
+  comes back to your hand). Sneak and use it with an empty hand: the radio comes out into your hand. Plain use still
+  opens its screen. Sneak-use with a handheld anywhere else still opens the handheld's screen.
+- [ ] Desk charger and power wire: power wire placed beside a desk charger now joins it (draws it towards the charger)
+  and the charger fills its store from the wire.
+- [ ] Desk charger: a handheld in the charger stands in the cradle as its 3D model (80% size), keypad and screen facing
+  out of the charger's front like its LED, for all four facings. Switched on, its LCD shows the main display (frequency
+  or channel, battery, a boxed CHG until full); switched off, the screen is dark glass. Other items in the slot still
+  show the old radio shape.
+- [ ] Handheld screen: a ribbed battery pack is drawn under the radio, as on the model; the screen is centred with it.
+- [ ] Held lower: in first person the radio sits lower, running off the bottom of the screen instead of floating.
+- [ ] Belt (Curios, moved 2026-11-04): a handheld in the belt slot shows clipped to the back of the belt over where
+  the left back pocket would be (halfway between the spine and the side), standing straight with its face to the back, about half size, against the
+  body; it follows the body turning and sneaking. Check it does not clip into the leg or a cape.
+- [ ] Hand mic in the hand (2026-11-04): the hand mic, the corded mic and the manpack mic show a small 3D speaker mic
+  (grille on the face, PTT on the side, clip on the back, cord out of the bottom) in first and third person; the
+  inventory still shows the flat icon. Tune the `display` in `tools/hand_microphone_model.py` if it sits badly.
+- [ ] Repeater autopatch screen: the extension and activation code labels fit inside the panel.
+- [ ] No receive while transmitting: hold PTT on a handheld while someone else talks on the frequency: you hear
+  nothing until you let go. Same for a base station or mobile with its PTT, and an HF radio sending CW does not hear
+  morse while keyed. A repeater still repeats.
+
+## Repeater Autopatch Controller (added 2026-11-04)
+
+GameTests cover dialling out with code, number and *, # hanging up and cancelling, an unknown number, answering a call
+in, turning calls away with no repeater, and phone audio held off the air while the repeater's input is busy. Set up:
+a repeater with duplexer and antenna, the autopatch touching it (or on its data wire), a powered PABX touching the
+autopatch, a telephone on the PABX, and a handheld on the repeater's input/output. These need a client.
+
+- [ ] Looks like a PABX but dark green; its lamp lights while armed or on a call. Right click: plain panel with
+  Extension, Activation code (only 0-9 and A-D type), "Repeater: linked", what it is doing (Idle, Armed dialing...,
+  Calling..., In call with...), Save and a status line that fits.
+- [ ] From the handheld's DTMF page send the code: a second of dial tone comes back on the repeater. Send the phone's
+  extension and *: ringback (2 s on, 4 s off) until the phone is answered, then one beep. A wrong number: fast busy.
+  # while armed, or 10 s with no key: two falling beeps.
+- [ ] On the call: the handheld's voice comes out of the telephone at phone quality. The phone's voice comes out of the
+  handheld only while nobody is transmitting on the repeater input; talking over it cuts the phone off (nothing is
+  saved up and played after). The repeater's hang time and courtesy beep still sound right around it.
+- [ ] # on the air hangs up (two beeps on the air, the phone shows CALL ENDED); hanging up the telephone ends it too.
+  Three minutes with nobody on the radio side hangs up by itself (server config autopatch_inactivity_seconds).
+- [ ] Call the autopatch's extension from the telephone: a short double ring on the air, then it answers by itself.
+
+## DTMF: handheld page, encoder and decoder (added 2026-11-04)
+
+GameTests cover encoder to decoder over the air, through a repeater, the lamps, pulse and toggle, a code that starts
+wrong, a signal too weak to copy, and receivers or radios that are off not sending. These need a client.
+
+- [ ] Handheld (changed 2026-11-04): # opens the DTMF page ("DTMF", then a small "KEYS, ENTER SENDS"). The keypad
+  keys, * and # (both clickable now), and 0-9, *, #, A-D typed on the keyboard add to the string on the second line;
+  the down arrow or Backspace deletes the last one. ENTER sends the whole string ("DTMF SENT") and goes back to the
+  frequency; ENTER with nothing typed just goes back. Another player's radio on the frequency hears real touch tones
+  (they should sound like a phone), and the sender's mic is cut while they go out. ENTER from the frequency now opens
+  only the offset page (ENTER again goes back).
+- [ ] Encoder resend (2026-11-04): with nothing keyed in, SEND sends the last number again (the one shown). A redstone
+  signal coming on beside the encoder (lever, button, pressure plate) sends the last number again; holding it on
+  sends once. GameTest `redstoneResendsLastNumber` covers the redstone.
+- [ ] Encoder screen: twelve keys in phone order, DEL, CLR, REDIAL, SEND; typing works, Enter sends, Backspace
+  deletes, typing E does not close it. With no radio on beside it, SEND says so above the hotbar.
+- [ ] Decoder screen: the code box takes only DTMF keys; Enter or SAVE sets it. The mode button switches pulse and
+  toggle. The two lamps on the screen and on the block light together; HEARD shows the keys copied.
+- [ ] Block models (placeholders): a grey box each, the decoder's red and green lamps lit full bright on its front
+  when on, the encoder's keypad on top. Floor cable drawn towards a radio beside them. Redstone dust beside the
+  decoder lights on a match; the radio beside it does not crackle with redstone interference when it does.
+- [ ] Weak signal: walk a handheld out to the edge of range and send a code to a decoder. Some keys should go
+  missing (the HEARD line shows gaps) and the code then does not match.
+
+## TA-43 field phone, data wire through unloaded chunks (added 2026-11-04)
+
+GameTests cover ringing, answering, the 6/12 phone limit and the wire memory. These need a client.
+
+- [ ] Looks like a TA-43: olive drab case, door and round window on the front, binding posts, knob and handset on top,
+  close to a full block. The handset goes from the model when picked up and the cord runs from its right hand end.
+- [ ] Right click with an empty hand: the handset comes up to the ear in third person and in the hand in first person,
+  about the size of the telephone's. Right click the phone with it to hang up; walking 5 blocks away snaps it back.
+  With an item in hand, right click places it (data wire laid against the phone).
+- [ ] Picking up rings the other phones on the line with a fast, low bell in bursts; it stops when anyone answers or
+  the caller hangs up. With power on one phone the bell and voices are louder.
+- [ ] Three handsets up: everyone hears everyone, two talking at once both come through.
+- [ ] Seven phones on an unpowered line: picking up says the line is dead, nothing rings.
+- [ ] Two field phones (or two telephones on PABXes) far apart, e.g. 600 blocks of data wire: with players only at each
+  end, the call still goes through and voice works. Lay the wire once with the phones loaded first.
+
 ## Phone PA (added 2026-11-02)
 
 GameTests cover answering, numbering, local calls and finding speakers. These need a client.
@@ -1069,7 +1316,7 @@ With Create and Create: Crafts & Additions installed (NeoForge 1.21.1):
   battery wired to a VHF base station: the battery holds steady with the radio transmitting most of the time.
 - [ ] Delete old `radiocraft-common.toml` files first, or they keep the old (about 15x larger) numbers.
 - [ ] A handheld's battery bar barely moves over a few minutes idle (it should last 12 in-game days).
-- [ ] The desk charger fills a flat handheld in about 6 minutes.
+- [ ] The desk charger fills a flat handheld in about 50 minutes (slowed to an eighth, 2026-11-04: 1 FE a tick).
 
 ## Solar weather station needs a radio (added 2026-10-23)
 
@@ -1578,3 +1825,74 @@ Lay coax (or power wire) along the ground up to a one-block step with more wire 
 
 - [ ] CW by ear between two stations: tone starts and stops cleanly, no stuck tone, sidetone on the sending radio.
 - [ ] `/rcdebug parrot <pos> <seconds>` on a radio with no controller still echoes voice and CW.
+
+## Power wire: a short forgotten when the wire is replaced (fixed 2026-11-04)
+
+- [ ] Make a loop of power wire on a charged battery so it shorts and smokes; break the shorted wire and open the loop
+  somewhere else, then put the wire back: it no longer smokes or burns. Put back with the loop still closed, it shorts
+  again from the start. GameTest `replacedWireForgetsShort` covers it.
+
+## Scroll tuning (added 2026-11-04)
+
+- [ ] Sneak, look at a radio that is on (HF, QRP, VHF base station or mobile, receivers, the all-band) and turn the
+  mouse wheel: each notch moves one channel step, a soft click plays, and the new frequency shows above the hotbar
+  ("146.535 MHz"); the hotbar slot does not change. A radio that is off does not tune (the wheel still does not move
+  the hotbar while you look at it). Not sneaking, or looking elsewhere, the wheel changes the hotbar as usual. The
+  repeater is left out. A trackpad's small scrolls add up to whole steps. Client setting `scroll_tuning` (in
+  radiocraft-client.toml) set to false turns it off.
+
+## Moderation computer boot (added 2026-11-04)
+
+- [ ] The first time a computer is opened in a session it boots in full inside its window (about 5.5 s): a BIOS
+  screen (memory count ticking up to 65536K, drives detected one by one, "Starting Radio Moderation 98..." with a
+  cursor), then a navy-to-blue splash with four waving panes, "Radio Moderation 98" and a sliding blue progress
+  strip while the disk clicks, then a rising bell and chime as the desktop fades in. Reopening it shows only the
+  splash (about 1.4 s). Any key or click skips to the desktop (the key does not type into a box); Escape still closes.
+  Check the sounds are not too loud and the text fits at GUI scales 2-4.
+- [ ] (Changed 2026-11-04, evening.) The only boot sounds are the memory count ticking and the chime: no disk clicks
+  during the drive detection or the splash. The splash's flag has a violet pane where the green one was.
+
+## Moderation computer sorting, Listen, Reboot; config names (added 2026-11-04, evening)
+
+- [ ] Click a column header on Live, Archive (radio and proximity), Tapes, Proximity Live and both Access lists: the
+  rows sort by it with an arrow on the header; again reverses. Numbers sort as numbers (frequency, hearing, time,
+  plays), the selection stays on its row, and the order holds as Live refreshes. Archive sorts the page shown.
+- [ ] Live: a Listen button after "Listen to talker". Pick a row (a player, a tape, a repeater, a commercial station
+  with "Include system/world stations" on) and press Listen, or double-click the row: you hear everything on that
+  frequency, clean, and the line top right says "Tuned to 146.5200 MHz". Stop listening ends it. Proximity Live's
+  double-click still listens to that speaker's voice chat. The audit log shows "listen frequency ...".
+- [ ] The screen is now never laid out narrower than 540: at GUI scale 4 on a small window it is drawn a little
+  smaller rather than the Live bottom row overlapping.
+- [ ] Access: Reboot (left side, beside Remove selected) runs the full BIOS boot again, stops listening and playback,
+  and every tab starts afresh (filters cleared, Live tab).
+- [ ] Mod list, RadioCraft, Config: every setting and section has a readable name (HF Frequency Step, Line of Sight
+  Range under 10m Band, Alternator FE at 256 RPM...), no raw keys, no "( * = Restart" in section names; hovering
+  still shows the description. Toggles, number boxes and enums edit as before.
+
+## Moderation computer left on, its monitor, Freeze (added 2026-11-04, evening)
+
+- [ ] Open a computer, change things (another tab, a filter, a selected row, scroll, the map dragged and zoomed),
+  close it, open it again within 10 minutes: everything is as you left it and it does not boot. Leave it closed over
+  10 minutes (or go to another dimension and back): it boots and starts afresh. Playback stops on closing as before;
+  live listening carries on, and the Live tab still shows who you are listening to.
+- [ ] Its monitor in the world shows the window as you left it (title bar, tabs, the list), lit at night, on the
+  glass above the taskbar, the right way round on all four facings, and not flickering against the glass. Another
+  player (or the same computer after 10 minutes) sees the plain desktop. Opening a second computer leaves the first
+  one's monitor showing its own window. Watch for a stutter while the screen is open (it is copied every 4 frames).
+- [ ] Live tab: a Freeze checkbox at the right end of the bottom row, never overlapping "Hear what they hear" (shrink
+  the window: the player dropdown narrows first, then the Freeze label). Ticked, the list stops updating so you can
+  scroll and read it (the durations stop too); the bell still rings; unticked, it catches up at once. Same on the
+  Proximity tab's Live view.
+
+## Small fixes (2026-11-04, afternoon)
+
+- [ ] Handheld volume: 100% is as loud as before; lower settings drop off much faster (10% is about a hundredth of
+  full, 50% a quarter). Also for a handheld in the desk charger.
+- [ ] Handheld direction finder: the beep is about a third as loud; its lamp now flashes on the lamp on top of the
+  case, not beside it.
+- [ ] Mod list: RadioCraft has a Config button again, opening NeoForge's settings screen (client and common settings;
+  server settings while in a world). Settings show their raw names, descriptions on hover.
+- [ ] Moderation computer: the Live tab shows who is on the air even with recording off (nothing is written to disk);
+  the Archive says "Logging is disabled" while recording is off; "Include system/world stations" sits between the
+  heading and the listening line and shows commercial modules, server tapes and repeats when ticked.
+

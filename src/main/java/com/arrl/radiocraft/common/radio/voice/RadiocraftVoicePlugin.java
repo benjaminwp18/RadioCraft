@@ -59,6 +59,8 @@ public class RadiocraftVoicePlugin implements VoicechatPlugin {
 //		event.getVoicechat().registerVolumeCategory(handheldRadiosVolumeCategory);
 	}
 
+	private static volatile long pttDebugLastLog = 0L; // Rate limit for the [ptt-debug] voice line.
+
 	public void onMicrophonePacket(MicrophonePacketEvent event) { // This should only be called serverside
 		if(API == null)
 			API = event.getVoicechat();
@@ -78,43 +80,64 @@ public class RadiocraftVoicePlugin implements VoicechatPlugin {
 			if(encodedAudio.length == 0)
 				encodingData.reset();
 			else {
-				// The wearer's HF manpack, keyed by its PTT or handset, hears only its wearer.
-				com.arrl.radiocraft.common.radio.voice.handheld.ManpackRadio.get(sender.getUuid())
-						.ifPresent(manpack -> manpack.acceptVoicePacket(sender.getServerLevel(), decodedAudio, sender.getUuid()));
-				PlayerRadioManager.get(sender.getUuid()).ifPresent(playerRadio -> {
-					//still need to reconsider the structure for static antennas so not deleting this just yet, but for synchronization the check is moved inside
-//					if (playerRadio.canTransmitVoice()){ //TODO reconsider this structure, should the onus be on the radio to know if it should transmit instead?
-						playerRadio.acceptVoicePacket(sender.getServerLevel(), decodedAudio, sender.getUuid());
-//					}
-				});
-
-				//this is the auditory range NOT the radio range
-				double sqrRange = API.getBroadcastRange();
-				sqrRange *= sqrRange;
-
-				List<IVoiceTransmitter> listeningMics = VoiceTransmitters.LISTENERS.get((Level) sender.getServerLevel().getServerLevel());
-
-				if(listeningMics != null) {
-
-					//make a copy so we don't have to hold up the game thread
-					List<IVoiceTransmitter> listeningMicsCopy;
-					synchronized (listeningMics) {
-						listeningMicsCopy = List.copyOf(listeningMics);
-					}
-
-					for (IVoiceTransmitter listener : listeningMicsCopy) { // All radio's microphones in audible range of the sender will receive the packet
-						Vec3 pos = listener.getPos();
-						Position playerPos = sender.getPosition();
-
-						if (pos.distanceToSqr(new Vec3(playerPos.getX(), playerPos.getY(), playerPos.getZ())) > sqrRange)
-							continue; // Do not transmit if out of range.
-
-						if (!listener.canTransmitVoice())
-							continue; // Do not transmit if listener is not accepting packets.
-
-						listener.acceptVoicePacket(sender.getServerLevel(), decodedAudio, sender.getUuid(), new Vec3(playerPos.getX(), playerPos.getY(), playerPos.getZ()));
-					}
+				// The moderation log keeps this Opus packet as it arrived: plain voice chat if asked, and for any radio that sends it.
+				com.arrl.radiocraft.common.moderation.ModerationHooks.proximity(sender.getUuid(), player.level(), sender.getPosition().getX(), sender.getPosition().getY(),
+						sender.getPosition().getZ(), encodedAudio, event.getPacket().isWhispering());
+				com.arrl.radiocraft.common.moderation.ModerationHooks.micBegin(sender.getUuid(), encodedAudio);
+				try {
+					handOut(sender, decodedAudio);
 				}
+				finally {
+					com.arrl.radiocraft.common.moderation.ModerationHooks.micEnd();
+				}
+			}
+		}
+	}
+
+	/** Hands a decoded microphone frame to the speaker's manpack, handhelds and every radio microphone in earshot. Voice chat thread. */
+	private void handOut(de.maxhenkel.voicechat.api.ServerPlayer sender, short[] decodedAudio) {
+		// The wearer's HF manpack, keyed by its PTT or handset, hears only its wearer.
+		com.arrl.radiocraft.common.radio.voice.handheld.ManpackRadio.get(sender.getUuid())
+				.ifPresent(manpack -> manpack.acceptVoicePacket(sender.getServerLevel(), decodedAudio, sender.getUuid()));
+		PlayerRadioManager.get(sender.getUuid()).ifPresent(playerRadio -> {
+			//still need to reconsider the structure for static antennas so not deleting this just yet, but for synchronization the check is moved inside
+//					if (playerRadio.canTransmitVoice()){ //TODO reconsider this structure, should the onus be on the radio to know if it should transmit instead?
+				playerRadio.acceptVoicePacket(sender.getServerLevel(), decodedAudio, sender.getUuid());
+//					}
+		});
+
+		//this is the auditory range NOT the radio range
+		double sqrRange = API.getBroadcastRange();
+		sqrRange *= sqrRange;
+
+		List<IVoiceTransmitter> listeningMics = VoiceTransmitters.LISTENERS.get((Level) sender.getServerLevel().getServerLevel());
+
+		if(listeningMics != null) {
+
+			//make a copy so we don't have to hold up the game thread
+			List<IVoiceTransmitter> listeningMicsCopy;
+			synchronized (listeningMics) {
+				listeningMicsCopy = List.copyOf(listeningMics);
+			}
+
+			for (IVoiceTransmitter listener : listeningMicsCopy) { // All radio's microphones in audible range of the sender will receive the packet
+				Vec3 pos = listener.getPos();
+				Position playerPos = sender.getPosition();
+
+				if (listener instanceof com.arrl.radiocraft.common.blockentities.radio.RadioBlockEntity pttRadio && pttRadio.isPTTDown()
+						&& System.currentTimeMillis() - pttDebugLastLog > 1000L) { // Once a second, whether a keyed radio gets the voice (logs/debug.log).
+					pttDebugLastLog = System.currentTimeMillis();
+					com.arrl.radiocraft.Radiocraft.LOGGER.debug("[ptt-debug] voice for keyed radio {} micPos={} dist={} range={} canTransmitVoice={}", pttRadio.getBlockPos().toShortString(), pos,
+							Math.sqrt(pos.distanceToSqr(new Vec3(playerPos.getX(), playerPos.getY(), playerPos.getZ()))), Math.sqrt(sqrRange), listener.canTransmitVoice());
+				}
+
+				if (pos.distanceToSqr(new Vec3(playerPos.getX(), playerPos.getY(), playerPos.getZ())) > sqrRange)
+					continue; // Do not transmit if out of range.
+
+				if (!listener.canTransmitVoice())
+					continue; // Do not transmit if listener is not accepting packets.
+
+				listener.acceptVoicePacket(sender.getServerLevel(), decodedAudio, sender.getUuid(), new Vec3(playerPos.getX(), playerPos.getY(), playerPos.getZ()));
 			}
 		}
 	}

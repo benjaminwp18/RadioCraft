@@ -104,7 +104,7 @@ public final class WireFaults {
 			return;
 		Map<BlockPos, Fault> faults = FAULTS.computeIfAbsent(level.dimension(), k -> new HashMap<>());
 		Fault fault = faults.get(pos);
-		Kind kind = fault != null && fault.kind == Kind.SHORT && hasPowerWire(level, pos) ? Kind.SHORT : classify(level, pos);
+		Kind kind = classify(level, pos); // A short is still a short only while the loop is closed (a new wire there may not close one).
 		if(kind == null)
 			faults.remove(pos);
 		else if(fault == null) {
@@ -114,6 +114,13 @@ public final class WireFaults {
 		}
 		else
 			fault.kind = kind;
+	}
+
+	/** The wire at {@code pos} is gone: whatever fault it had goes with it (a wire put back there starts afresh). */
+	public static void forget(Level level, BlockPos pos) {
+		Map<BlockPos, Fault> faults = FAULTS.get(level.dimension());
+		if(faults != null)
+			faults.remove(pos);
 	}
 
 	/** The fault at {@code pos}, or null. For tests and debugging. */
@@ -269,7 +276,7 @@ public final class WireFaults {
 			if(!level.isLoaded(pos))
 				continue;
 			if((time + pos.hashCode()) % RECHECK_TICKS == 0) {
-				Kind kind = fault.kind == Kind.SHORT && hasPowerWire(level, pos) ? Kind.SHORT : classify(level, pos);
+				Kind kind = classify(level, pos);
 				if(kind == null) {
 					it.remove();
 					continue;

@@ -1,0 +1,34 @@
+{
+	"variants": {
+		"facing=north,off_hook=false": {
+			"model": "radiocraft:block/field_phone"
+		},
+		"facing=north,off_hook=true": {
+			"model": "radiocraft:block/field_phone_off_hook"
+		},
+		"facing=east,off_hook=false": {
+			"model": "radiocraft:block/field_phone",
+			"y": 90
+		},
+		"facing=east,off_hook=true": {
+			"model": "radiocraft:block/field_phone_off_hook",
+			"y": 90
+		},
+		"facing=south,off_hook=false": {
+			"model": "radiocraft:block/field_phone",
+			"y": 180
+		},
+		"facing=south,off_hook=true": {
+			"model": "radiocraft:block/field_phone_off_hook",
+			"y": 180
+		},
+		"facing=west,off_hook=false": {
+			"model": "radiocraft:block/field_phone",
+			"y": 270
+		},
+		"facing=west,off_hook=true": {
+			"model": "radiocraft:block/field_phone_off_hook",
+			"y": 270
+		}
+	}
+}

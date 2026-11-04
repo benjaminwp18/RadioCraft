@@ -52,6 +52,16 @@ public class RadiocraftServerConfig {
 	public static final ModConfigSpec.ConfigValue<Boolean> WIND_ANTENNA_DAMAGE_ENABLED;
 	public static final ModConfigSpec.ConfigValue<Integer> ALTERNATOR_FE_AT_256_RPM;
 	public static final ModConfigSpec.ConfigValue<Boolean> TAPES_IN_WORLD;
+
+	/** How the moderation log keeps voice: as it arrived, or re-encoded narrowband (not available yet). */
+	public enum ModerationQuality { ORIGINAL, NARROWBAND }
+	public static final ModConfigSpec.ConfigValue<Boolean> MODERATION_RECORD_RADIO;
+	public static final ModConfigSpec.ConfigValue<Boolean> MODERATION_RECORD_PROXIMITY;
+	public static final ModConfigSpec.ConfigValue<Integer> MODERATION_RETENTION_DAYS;
+	public static final ModConfigSpec.ConfigValue<Boolean> MODERATION_METADATA_ONLY;
+	public static final ModConfigSpec.ConfigValue<Double> MODERATION_STORAGE_CAP_GB;
+	public static final ModConfigSpec.EnumValue<ModerationQuality> MODERATION_ARCHIVE_QUALITY;
+	public static final ModConfigSpec.ConfigValue<Boolean> MODERATION_NOTICE;
 	public static final ModConfigSpec.ConfigValue<Integer> ALTERNATOR_STRESS_AT_256_RPM;
 	public static final ModConfigSpec.ConfigValue<Boolean> SOLAR_EVENTS_ENABLED;
 	public static final ModConfigSpec.ConfigValue<Double> LIGHTNING_STATIC_STRENGTH;
@@ -88,11 +98,14 @@ public class RadiocraftServerConfig {
 	public static final ModConfigSpec.ConfigValue<Integer> PABX_MASTER_DIGITS;
 	public static final ModConfigSpec.ConfigValue<Double> PHONE_POWER_USE;
 	public static final ModConfigSpec.ConfigValue<Double> PHONE_PA_CALL_MULTIPLIER;
+	public static final ModConfigSpec.ConfigValue<Integer> AUTOPATCH_INACTIVITY_SECONDS;
 	public static final ModConfigSpec.ConfigValue<Integer> APRS_MESSAGE_RETRIES;
 	public static final ModConfigSpec.ConfigValue<Boolean> APRS_BEACON_DEFAULT;
 	public static final ModConfigSpec.ConfigValue<Boolean> APRS_DIGIPEAT_DEFAULT;
 	public static final ModConfigSpec.ConfigValue<Integer> APRS_CONTACT_LAMP_MINUTES;
 	public static final ModConfigSpec.ConfigValue<Boolean> APRS_H19_STAINED_GLASS;
+	public static final ModConfigSpec.ConfigValue<Double> HANDHELD_APRS_FREQUENCY_MHZ;
+	public static final ModConfigSpec.ConfigValue<Integer> HANDHELD_APRS_BEACON_SECONDS;
 	public static final ModConfigSpec.ConfigValue<Double> ANTENNA_TUNER_MAX_SWR;
 	public static final ModConfigSpec.ConfigValue<Integer> AUTO_TUNER_POWER_USE;
 	public static final ModConfigSpec.ConfigValue<Double> RADIO_BLOW_SWR;
@@ -333,6 +346,7 @@ public class RadiocraftServerConfig {
 		PABX_POWER_USE = BUILDER.comment(" Power a phone PABX draws per tick, always: no calls through it without (radios_need_power = false runs it free)").defineInRange("pabx_power_use", 2, 0, 10000);
 		PHONE_POWER_USE = BUILDER.comment(" Power each phone or Phone PA draws per tick, through its PABX and on top of the PABX's own: 20 phones match an HF receiver").defineInRange("phone_power_use", 0.4, 0.0, 1000.0);
 		PHONE_PA_CALL_MULTIPLIER = BUILDER.comment(" How many times a phone's power a Phone PA draws while a call plays through it").defineInRange("phone_pa_call_multiplier", 3.0, 0.0, 1000.0);
+		AUTOPATCH_INACTIVITY_SECONDS = BUILDER.comment(" Seconds a repeater autopatch call stays up with nothing heard from the radio side before it hangs up (0: never)").defineInRange("autopatch_inactivity_seconds", 180, 0, 3600);
 		PABX_MASTER_DIGITS = BUILDER.comment(" Digits in a phone PABX's master number (dialed before an extension to reach it from another PABX); a PABX may also have none")
 				.defineInRange("pabx_master_digits", 3, 1, 6);
 		APRS_MESSAGE_RETRY_SECONDS = BUILDER.comment(" Seconds an APRS message waits for its ack before it is sent again")
@@ -347,6 +361,10 @@ public class RadiocraftServerConfig {
 				.defineInRange("aprs_contact_lamp_minutes", 10, 0, 1440);
 		APRS_H19_STAINED_GLASS = BUILDER.comment(" Allow stained glass for the H19 APRS terminal's screen in its recipe, as well as tinted glass")
 				.define("allow_stained_glass_for_h19_aprs", false);
+		HANDHELD_APRS_FREQUENCY_MHZ = BUILDER.comment(" Frequency in MHz the APRS module in a VHF handheld sends and listens on, whatever the handheld's own dial says (its second receiver)")
+				.defineInRange("handheld_aprs_frequency_mhz", 144.390D, 144.0D, 148.0D);
+		HANDHELD_APRS_BEACON_SECONDS = BUILDER.comment(" Shortest time in seconds between position beacons from a VHF handheld's APRS module; holders pick their interval on the handheld, and a shorter one waits this long")
+				.defineInRange("handheld_aprs_min_beacon_seconds", 30, 10, 3600);
 		BUILDER.pop();
 
 		BUILDER.push("Antenna Tuner");
@@ -556,6 +574,21 @@ public class RadiocraftServerConfig {
 		COMMERCIAL_STATION_RANGE = BUILDER.comment(" Commercial radio modules stay on the air with their chunks unloaded. A radio site with a module nobody has",
 				" been near yet is on the air too, once a player comes within this many blocks of where it will be (0: only",
 				" sites already generated are)").defineInRange("commercial_station_range", 6000, 0, 100000);
+		BUILDER.pop();
+
+		BUILDER.push("Moderation");
+		BUILDER.comment(" A log of radio traffic for server moderators, kept in <world>/radiocraft/moderation: each transmission once, at",
+				" its source, with who heard it. Off by default. Consent laws (two-party US states, GDPR) apply to a server that",
+				" turns it on.");
+		MODERATION_RECORD_RADIO = BUILDER.comment(" Log transmissions over radios: player voice as it arrived, data, CW, and notes for the rest").define("moderation_record_radio", false);
+		MODERATION_RECORD_PROXIMITY = BUILDER.comment(" Also log plain Simple Voice Chat (no radio), separately").define("moderation_record_proximity", false);
+		MODERATION_RETENTION_DAYS = BUILDER.comment(" Days the log is kept; whole hours of audio and whole days of the index are deleted after that.",
+				" Flagged transmissions are kept until unflagged").defineInRange("moderation_retention_days", 7, 1, 3650);
+		MODERATION_METADATA_ONLY = BUILDER.comment(" Keep who, when, where, frequency, hearers, data and notes, but no audio").define("moderation_metadata_only", false);
+		MODERATION_STORAGE_CAP_GB = BUILDER.comment(" Most disk the log's audio may use, in GB; the oldest hours go first past it").defineInRange("moderation_storage_cap_gb", 5.0, 0.01, 10000.0);
+		MODERATION_ARCHIVE_QUALITY = BUILDER.comment(" ORIGINAL keeps voice as it arrived (about 11-14 MB an hour of speech). NARROWBAND would re-encode it at",
+				" 8-12 kbps; not available yet (the voice chat's server side has no bitrate setting), so it keeps ORIGINAL").defineEnum("moderation_archive_quality", ModerationQuality.ORIGINAL);
+		MODERATION_NOTICE = BUILDER.comment(" Tell each player as they join that voice may be recorded, while any recording is on").define("moderation_notice", true);
 		BUILDER.pop();
 
 		SPEC = BUILDER.build();

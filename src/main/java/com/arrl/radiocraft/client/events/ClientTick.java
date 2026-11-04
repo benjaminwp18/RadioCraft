@@ -39,10 +39,19 @@ public class ClientTick {
             SPlayerClickHoldUpdate.updateServer(isUseHeld);
 
             boolean holdingRadio = Optional.ofNullable(Minecraft.getInstance().player).map(Player::getMainHandItem).map(i -> i.getCapability(VHF_HANDHELDS)).isPresent();
+            // Holding right click also talks on a radio's hand mic, or on the desk mic being looked at: the voice chat
+            // has to send for those too, or the radio keys up and carries nothing.
+            boolean holdingMic = Optional.ofNullable(Minecraft.getInstance().player).map(Player::getMainHandItem)
+                    .map(i -> i.getItem() instanceof com.arrl.radiocraft.common.items.CordedMicrophoneItem).orElse(false);
+            boolean atDeskMic = Minecraft.getInstance().hitResult instanceof net.minecraft.world.phys.BlockHitResult hit && Minecraft.getInstance().level != null
+                    && Minecraft.getInstance().level.getBlockState(hit.getBlockPos()).getBlock() instanceof com.arrl.radiocraft.common.blocks.radios.MicrophoneBlock;
 
-            RadiocraftClientValues.SCREEN_PTT_PRESSED =
-                    RadiocraftClientValues.SCREEN_VOICE_ENABLED =
-                            isUseHeld && !Minecraft.getInstance().options.keyShift.isDown() && holdingRadio;
+            // A screen with its own PTT (the radios' screens) runs the voice flags itself. Opening it lets go of right
+            // click, and setting them here then turned the voice off under its PTT button.
+            if(Minecraft.getInstance().screen == null)
+                RadiocraftClientValues.SCREEN_PTT_PRESSED =
+                        RadiocraftClientValues.SCREEN_VOICE_ENABLED =
+                                isUseHeld && !Minecraft.getInstance().options.keyShift.isDown() && (holdingRadio || holdingMic || atDeskMic);
 
             if(holdingRadio && !Minecraft.getInstance().options.keyShift.isDown()) {
                 if(isUseHeld) {

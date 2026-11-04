@@ -20,7 +20,7 @@ public class HFRadio20mScreen extends HFRadioScreen<HFRadio20mMenu> {
 	@Override
 	protected void init() {
 		super.init();
-		addRenderableWidget(new ToggleButton(menu.isPowered(), leftPos + 7, topPos + 5, 14, 17, 0, 0, widgetsTexture, 256, 256, this::onPressPower)); // Power button
+		addRenderableWidget(new ToggleButton(menu.isPowered(), leftPos + 7, topPos + 5, 14, 17, 0, 0, widgetsTexture, 256, 256, this::onPressPower).withPowerClick()); // Power button
 		addRenderableWidget(new ValueButton(leftPos + 74, topPos + 74, 30, 21, 0, 34, widgetsTexture, 256, 256, () -> menu.blockEntity.getCWEnabled(), this::onPressCW)); // CW Button
 		addRenderableWidget(new ValueButton(leftPos + 74, topPos + 53, 30, 21, 0, 76, widgetsTexture, 256, 256, () -> menu.blockEntity.getSSBEnabled(), this::onPressSSB)); // SSB button
 		addRenderableWidget(new HoldButton(leftPos + 200, topPos + 11, 34, 21, 0, 118, widgetsTexture, 256, 256, this::onPressPTT, this::onReleasePTT)); // PTT button

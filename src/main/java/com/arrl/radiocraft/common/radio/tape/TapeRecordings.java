@@ -30,7 +30,8 @@ public final class TapeRecordings {
 	private TapeRecordings() {
 	}
 
-	private static Path file(MinecraftServer server, UUID id) {
+	/** Where tape {@code id}'s recording is kept (it may not exist). */
+	public static Path file(MinecraftServer server, UUID id) {
 		return server.getWorldPath(LevelResource.ROOT).resolve(Radiocraft.MOD_ID).resolve("recordings").resolve(id + ".ulaw");
 	}
 
@@ -41,6 +42,8 @@ public final class TapeRecordings {
 		Path file = file(server, id);
 		CompletableFuture.runAsync(() -> {
 			try {
+				// Recorded over: the moderation log keeps the old take if a logged transmission points at it.
+				com.arrl.radiocraft.common.moderation.ModerationHooks.tapeOverwriting(id, file);
 				Files.createDirectories(file.getParent());
 				Files.write(file, data);
 			}
@@ -70,6 +73,11 @@ public final class TapeRecordings {
 			LOADING.remove(id);
 		}));
 		return null;
+	}
+
+	/** A recording file's bytes as 48 kHz audio, as it plays back. */
+	public static short[] decode(byte[] data) {
+		return expand(data);
 	}
 
 	/** 48 kHz 16 bit to 16 kHz mu-law, averaging each three samples. */

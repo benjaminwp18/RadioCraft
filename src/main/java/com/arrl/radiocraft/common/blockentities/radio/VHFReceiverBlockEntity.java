@@ -38,6 +38,11 @@ public class VHFReceiverBlockEntity extends VHFRadioBlockEntity {
     }
 
     @Override
+    public boolean hasTransmitter() {
+        return false;
+    }
+
+    @Override
     public BENetworkObject createNetworkObject() {
         return new RadioNetworkObject(level, worldPosition, CommonConfig.VHF_RECEIVER_TICK.get(), CommonConfig.VHF_RECEIVER_TICK.get());
     }

@@ -54,6 +54,8 @@ public class RadiocraftItems {
 	public static final Supplier<Item> ANTENNA_ANALYZER = ITEMS.register("antenna_analyzer", () -> new AntennaAnalyzerItem(new Properties().stacksTo(1)));
 	public static final CrystalVariants<Item, VHFHandheldItem> VHF_HANDHELD_VARIANTS = CrystalVariants.register(ITEMS, "vhf_handheld", crystal -> new VHFHandheldItem(new Properties().stacksTo(1).component(RadiocraftDataComponent.HANDHELD_RADIO_STATE_COMPONENT.value(), HandheldRadioState.getDefault()), crystal));
 	public static final DeferredHolder<Item, VHFHandheldItem> VHF_HANDHELD = VHF_HANDHELD_VARIANTS.good();
+	/** Crafted into a VHF handheld: the handheld's APRS button then opens its APRS menu. */
+	public static final Supplier<Item> APRS_MODULE = ITEMS.register("aprs_module", () -> new com.arrl.radiocraft.common.items.AprsModuleItem(new Properties()));
 	public static final DeferredHolder<Item, AntennaWireItem> ANTENNA_WIRE = ITEMS.register("antenna_wire", () -> new AntennaWireItem(new Properties()));
 	public static final DeferredHolder<Item, PassthroughItem> PASSTHROUGH = ITEMS.register("passthrough", () -> new PassthroughItem(new Properties()));
 
@@ -102,6 +104,8 @@ public class RadiocraftItems {
 	public static final Supplier<BlockItem> QRP_RADIO_40M = simpleBlockItem("qrp_radio_40m", RadiocraftBlocks.QRP_RADIO_40M);
 
 	public static final Supplier<BlockItem> RADIO_INTERFACE = simpleBlockItem("radio_interface", RadiocraftBlocks.RADIO_INTERFACE);
+	public static final Supplier<BlockItem> DTMF_DECODER = simpleBlockItem("dtmf_decoder", RadiocraftBlocks.DTMF_DECODER);
+	public static final Supplier<BlockItem> DTMF_ENCODER = simpleBlockItem("dtmf_encoder", RadiocraftBlocks.DTMF_ENCODER);
 	public static final Supplier<BlockItem> APRS_TERMINAL = simpleBlockItem("aprs_h19", RadiocraftBlocks.APRS_TERMINAL);
 	public static final Map<String, Supplier<BlockItem>> RADIO_FAXES = radioFaxes();
 	/** A roll torn off a teletype, with everything it printed. */
@@ -165,8 +169,14 @@ public class RadiocraftItems {
 	public static final Supplier<BlockItem> TELEPHONE = simpleBlockItem("telephone", RadiocraftBlocks.TELEPHONE);
 	public static final Supplier<BlockItem> PABX = simpleBlockItem("pabx", RadiocraftBlocks.PABX);
 	public static final Supplier<BlockItem> PHONE_PA = simpleBlockItem("phone_pa", RadiocraftBlocks.PHONE_PA);
+	public static final Supplier<BlockItem> MODERATION_COMPUTER = simpleBlockItem("moderation_computer", RadiocraftBlocks.MODERATION_COMPUTER);
+	public static final Supplier<BlockItem> REPEATER_AUTOPATCH = simpleBlockItem("repeater_autopatch", RadiocraftBlocks.REPEATER_AUTOPATCH);
 	/** A telephone's handset while it is off the hook; never crafted or in a creative tab. */
 	public static final DeferredHolder<Item, com.arrl.radiocraft.common.items.TelephoneHandsetItem> TELEPHONE_HANDSET = ITEMS.register("telephone_handset",
+			() -> new com.arrl.radiocraft.common.items.TelephoneHandsetItem(new Properties()));
+	public static final Supplier<BlockItem> FIELD_PHONE = simpleBlockItem("field_phone", RadiocraftBlocks.FIELD_PHONE);
+	/** A field phone's handset while it is off the hook; never crafted or in a creative tab. */
+	public static final DeferredHolder<Item, com.arrl.radiocraft.common.items.TelephoneHandsetItem> FIELD_PHONE_HANDSET = ITEMS.register("field_phone_handset",
 			() -> new com.arrl.radiocraft.common.items.TelephoneHandsetItem(new Properties()));
 	public static final Supplier<BlockItem> WEATHER_STATION = simpleBlockItem("weather_station", RadiocraftBlocks.WEATHER_STATION);
 	/** A floppy with the world on it: crafted into a direction finder it makes the map enabled one. Cartographers sell it. */

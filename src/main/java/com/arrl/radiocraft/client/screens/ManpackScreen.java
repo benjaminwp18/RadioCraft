@@ -96,7 +96,7 @@ public class ManpackScreen extends Screen {
 		if(state == null || button != 0)
 			return super.mouseClicked(mouseX, mouseY, button);
 		if(inside(PWR, mouseX, mouseY)) {
-			click(0.8F);
+			com.arrl.radiocraft.client.screens.widgets.ToggleButton.playPowerClick(!state.on());
 			SManpackPacket.send("power", 0.0F);
 		}
 		else if(inside(MODE, mouseX, mouseY)) {

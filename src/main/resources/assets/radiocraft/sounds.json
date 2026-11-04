@@ -61,10 +61,51 @@
       }
     ]
   },
+  "h19_running": {
+    "subtitle": "subtitles.radiocraft.h19_running",
+    "sounds": [
+      "radiocraft:h19_whirr_2"
+    ]
+  },
+  "h19_bell": {
+    "subtitle": "subtitles.radiocraft.h19_bell",
+    "sounds": [
+      "radiocraft:h19_bell"
+    ]
+  },
+  "h19_type": {
+    "sounds": [
+      "radiocraft:h19_type"
+    ]
+  },
+  "power_in": {
+    "sounds": [
+      "radiocraft:power_in"
+    ]
+  },
+  "power_out": {
+    "sounds": [
+      "radiocraft:power_out"
+    ]
+  },
+  "fm_static": {
+    "sounds": [
+      "radiocraft:fm_static"
+    ]
+  },
   "redstone_rfi": {
     "subtitle": "subtitles.radiocraft.redstone_rfi",
     "sounds": [
-      "radiocraft:redstone_rfi"
+      "radiocraft:redstone_rfi",
+      "radiocraft:redstone_rfi_2",
+      {
+        "name": "radiocraft:redstone_rfi_3",
+        "volume": 0.55
+      },
+      {
+        "name": "radiocraft:redstone_rfi_4",
+        "volume": 0.55
+      }
     ]
   }
 }

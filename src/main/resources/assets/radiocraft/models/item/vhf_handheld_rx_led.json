@@ -1,0 +1,87 @@
+{
+  "credit": "RadioCraft placeholder, made by script (see doc/ModelDesignBounty.md)",
+  "texture_size": [
+    64,
+    64
+  ],
+  "textures": {
+    "0": "radiocraft:item/vhf_handheld_3d",
+    "particle": "radiocraft:item/vhf_handheld_3d"
+  },
+  "elements": [
+    {
+      "name": "rx_led",
+      "from": [
+        6.45,
+        9.45,
+        9.25
+      ],
+      "to": [
+        6.8,
+        9.8,
+        9.32
+      ],
+      "faces": {
+        "north": {
+          "uv": [
+            13.25,
+            9.25,
+            14.25,
+            10.25
+          ],
+          "texture": "#0"
+        },
+        "east": {
+          "uv": [
+            13.25,
+            9.25,
+            14.25,
+            10.25
+          ],
+          "texture": "#0"
+        },
+        "west": {
+          "uv": [
+            13.25,
+            9.25,
+            14.25,
+            10.25
+          ],
+          "texture": "#0"
+        },
+        "up": {
+          "uv": [
+            13.25,
+            9.25,
+            14.25,
+            10.25
+          ],
+          "texture": "#0"
+        },
+        "down": {
+          "uv": [
+            13.25,
+            9.25,
+            14.25,
+            10.25
+          ],
+          "texture": "#0"
+        },
+        "south": {
+          "uv": [
+            13.25,
+            9.25,
+            14.25,
+            10.25
+          ],
+          "texture": "#0"
+        }
+      },
+      "neoforge_data": {
+        "block_light": 15,
+        "sky_light": 15,
+        "ambient_occlusion": false
+      }
+    }
+  ]
+}

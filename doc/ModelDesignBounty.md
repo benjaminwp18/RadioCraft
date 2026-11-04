@@ -40,6 +40,40 @@ What was done for the parrot controller, as the pattern for the next one:
 
 ## Open bounties
 
+### Model: Radio Moderation Computer (2026-11-04)
+
+`radiocraft:moderation_computer` (`models/block/moderation_computer.json`, `textures/block/moderation_computer.png`, from
+`tools/moderation_computer_model.py`): the server admins' moderation screen, so it should look like a late-90s office PC
+in yellowed beige plastic. The placeholder is five boxes: a desktop case (CD and floppy drives, power button, green and
+amber lamps) with a CRT monitor on top (its glass showing a teal desktop with a small grey window) and a keyboard in
+front. Wanted: a proper chunky CRT with a curved tub and vents, a keyboard with readable key rows, maybe a mouse and pad,
+and a screen glow (an emissive layer for the glass) so it reads as switched on. It faces north (keyboard to the front),
+one block, nothing above 15 pixels. Its screen GUI is drawn in code (Windows 98 style) and needs no art.
+
+### Model: repeater autopatch controller (2026-11-04)
+
+`radiocraft:repeater_autopatch`: the box that patches a phone PABX into a VHF repeater. For now it is the phone PABX's
+model with its texture recoloured dark green (`textures/block/repeater_autopatch.png`, from
+`tools/repeater_autopatch_assets.py`). Same size as the PABX is fine; it wants a front of its own (a small DTMF keypad
+or status lamps, a phone jack and a coax/audio port to the repeater) and a lamp that lights while armed or on a call
+(`lit=true`).
+
+### Texture: APRS module (2026-11-04)
+
+`radiocraft:aprs_module` (`textures/item/aprs_module.png`): a small TNC/GPS board that goes inside the VHF handheld.
+The current 16x16 is a programmer placeholder (dark board, orange APRS label, gold edge pins).
+
+### Model: hand microphone in the hand (2026-11-04)
+
+`models/item/hand_microphone_3d.json` with `textures/item/hand_microphone_3d.png`, made by
+`tools/hand_microphone_model.py`: a placeholder speaker mic (grille, PTT bar, clip, cord stub) shown in the hand for
+the hand, corded and manpack mics. The inventory keeps the flat `hand_microphone.png`.
+
+### Model: VHF handheld in the hand (2026-11-04)
+
+`models/item/vhf_handheld_3d.json` with `textures/item/vhf_handheld_3d.png` is a first try at the handheld held in the
+hand (body, LCD, keypad, rubber duck antenna, battery pack on the bottom), made by hand rather than in Blockbench. The
+inventory icon stays the flat sprite. A proper Blockbench model and texture in the same spirit is welcome.
 
 ### Model: antenna splitter (2026-10-30)
 
@@ -81,6 +115,13 @@ and the Ionospheric Processor are done (maintainer).
   in the feeder behind. Its screen is a painted fascia (`textures/gui/radio_fax.png`) over the vanilla chest's
   inventory half: wanted, a proper inventory panel in the same style. The old `interface_models.py` transfer
   interface draft (`transfer_interface.json`, `transfer_interface_busy.json`) is no longer used.
+- **DTMF Decoder** (`dtmf_decoder`, 2026-11-04): a small box against a radio with a red lamp (a code is coming in)
+  and a green lamp (it matched); `dtmf_decoder_red` and `dtmf_decoder_green` are the lit faces the blockstate adds.
+  Placeholder grey box from `tools/dtmf_models.py` (texture `dtmf.png`); wanted: a 1970s tone decoder or repeater
+  controller card in a box, with the two lamps and maybe a code thumbwheel. Its screen is a plain panel.
+- **DTMF Encoder** (`dtmf_encoder`, 2026-11-04): a touch-tone keypad (1-9, *, 0, #) in a small box with a display,
+  against a radio. Same placeholder script and texture; wanted: a desk "autopatch" pad or a Bell keypad in a case.
+  Its screen is a plain panel with buttons: wanted a keypad panel in the same style.
 - Lamps go in as separate named elements, like the H19's MSG / CONTACT / READY: `python tools/split_lamps.py <model>
   <LAMP>...` splits a Blockbench export into the body and one full-bright model per lamp.
 

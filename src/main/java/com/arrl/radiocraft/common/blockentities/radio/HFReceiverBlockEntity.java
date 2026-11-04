@@ -38,6 +38,11 @@ public class HFReceiverBlockEntity extends HFRadioBlockEntity {
     }
 
     @Override
+    public boolean hasTransmitter() {
+        return false;
+    }
+
+    @Override
     public BENetworkObject createNetworkObject() {
         return new RadioNetworkObject(level, worldPosition, CommonConfig.HF_RECEIVER_TICK.get(), CommonConfig.HF_RECEIVER_TICK.get());
     }

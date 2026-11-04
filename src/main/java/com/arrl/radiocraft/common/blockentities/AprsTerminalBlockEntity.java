@@ -252,6 +252,8 @@ public class AprsTerminalBlockEntity extends BlockEntity implements MenuProvider
 	public static <T extends BlockEntity> void tick(Level level, BlockPos pos, BlockState state, T t) {
 		if(t instanceof AprsTerminalBlockEntity terminal && level instanceof ServerLevel serverLevel)
 			terminal.serverTick(serverLevel);
+		else if(t instanceof AprsTerminalBlockEntity terminal && level.isClientSide)
+			com.arrl.radiocraft.client.blockentity.AprsTerminalClient.tick(terminal); // Its running noise.
 	}
 
 	private void serverTick(ServerLevel level) {
@@ -594,7 +596,7 @@ public class AprsTerminalBlockEntity extends BlockEntity implements MenuProvider
 			log(new Logged(packet, false, now));
 			unread = true;
 			if(messageBuzzer)
-				buzz(0.8F);
+				bell();
 		}
 		else if(packet.kind() == TncPacket.Kind.ACK && bus.isFor(packet.to())) {
 			if(!acknowledged(packet.from(), packet.text()))
@@ -621,6 +623,12 @@ public class AprsTerminalBlockEntity extends BlockEntity implements MenuProvider
 	private void buzz(float pitch) {
 		if(level != null)
 			level.playSound(null, worldPosition, SoundEvents.NOTE_BLOCK_BIT.value(), SoundSource.BLOCKS, 0.6F, pitch);
+	}
+
+	/** The H19's bell, for a message in. */
+	private void bell() {
+		if(level != null)
+			level.playSound(null, worldPosition, com.arrl.radiocraft.common.init.RadiocraftSoundEvents.H19_BELL.get(), SoundSource.BLOCKS, 0.7F, 1.0F);
 	}
 
 	// -------------------- SETTINGS --------------------

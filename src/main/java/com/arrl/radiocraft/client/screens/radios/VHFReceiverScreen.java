@@ -22,7 +22,7 @@ public class VHFReceiverScreen extends VHFRadioScreen<VHFReceiverMenu> {
 	@Override
 	protected void init() {
 		super.init();
-		addRenderableWidget(new ToggleButton(menu.isPowered(), leftPos + 10, topPos + 11, 14, 19, 0, 0, widgetsTexture, 256, 256, this::onPressPower));
+		addRenderableWidget(new ToggleButton(menu.isPowered(), leftPos + 10, topPos + 11, 14, 19, 0, 0, widgetsTexture, 256, 256, this::onPressPower).withPowerClick());
 		addRenderableWidget(new ToggleButton(false, leftPos + 220, topPos + 9, 22, 22, 0, 67, widgetsTexture, 256, 256, (btn) -> {}));
 		
 		// LEDs - use LedIndicator that only renders when on and is not clickable

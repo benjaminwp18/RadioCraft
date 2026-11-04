@@ -50,6 +50,8 @@
     "radiocraft:direction_finder",
     "radiocraft:map_direction_finder",
     "radiocraft:aprs_h19",
-    "radiocraft:pabx"
+    "radiocraft:desk_charger",
+    "radiocraft:pabx",
+    "radiocraft:field_phone"
   ]
 }

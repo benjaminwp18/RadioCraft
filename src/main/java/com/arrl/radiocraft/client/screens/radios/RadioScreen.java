@@ -63,6 +63,7 @@ public abstract class RadioScreen<T extends RadioMenu<?>> extends AbstractContai
 		renderAdditionalTooltips(pGuiGraphics, pMouseX, pMouseY, pPartialTick);
 		renderGainReadout(pGuiGraphics, speakerGainDial, menu.blockEntity.getSpeakerGain());
 		renderGainReadout(pGuiGraphics, micGainDial, menu.blockEntity.getMicGain());
+		com.arrl.radiocraft.client.screens.RecIndicator.draw(pGuiGraphics, font, leftPos + imageWidth - 4, topPos + 3); // The server logs radio voice.
 	}
 
 	/** The speaker (volume) and mic gain dials, if the radio's screen has them; set by each screen in init. */

@@ -25,10 +25,22 @@ import software.bernie.geckolib.animatable.instance.AnimatableInstanceCache;
 import software.bernie.geckolib.animation.AnimatableManager;
 import software.bernie.geckolib.util.GeckoLibUtil;
 import com.arrl.radiocraft.common.capabilities.BasicEnergyStorage;
+import com.arrl.radiocraft.api.capabilities.IVHFHandheldCapability;
+import com.arrl.radiocraft.common.capabilities.RadiocraftCapabilities;
+import com.arrl.radiocraft.common.items.VHFHandheldItem;
+import com.arrl.radiocraft.common.radio.voice.handheld.DockedHandheld;
+import net.minecraft.server.level.ServerLevel;
 
 import javax.annotation.Nullable;
 
-public class DeskChargerBlockEntity extends BlockEntity implements GeoBlockEntity, MenuProvider {
+/**
+ * The desk charger: charges the battery of what is in its cradle from its own store, which it fills from a power wire
+ * ({@link com.arrl.radiocraft.common.be_networks.network_objects.DeskChargerNetworkObject}). A VHF handheld in it stays a
+ * working radio ({@link DockedHandheld}): switched on, it uses its battery as in the hand (so it runs down on a charger
+ * with no power), hears its frequency through its speaker, and its APRS module beacons and takes packets. Its screen
+ * lights while it hears something.
+ */
+public class DeskChargerBlockEntity extends BlockEntity implements GeoBlockEntity, MenuProvider, com.arrl.radiocraft.api.benetworks.INetworkObjectProvider {
 
     private final AnimatableInstanceCache cache = GeckoLibUtil.createInstanceCache(this);
     public final ItemStackHandler inventory = new ItemStackHandler(1) {
@@ -48,12 +60,138 @@ public class DeskChargerBlockEntity extends BlockEntity implements GeoBlockEntit
     // When true the charger will supply energy to radios without draining its internal buffer
     private boolean infinite = false;
 
+    // The handheld in the cradle as a radio (server only, while one is there) and whether it is hearing something (synced).
+    @Nullable
+    private DockedHandheld docked = null;
+    private boolean receiving = false;
+
     public DeskChargerBlockEntity(BlockPos pos, BlockState state) {
         super(RadiocraftBlockEntities.DESK_CHARGER.get(), pos, state);
     }
 
+    @Override
+    public void onLoad() {
+        super.onLoad();
+        if (level != null && !level.isClientSide)
+            getNetworkObject(level, worldPosition); // Joins a power wire touching it.
+    }
+
+    @Override
+    public com.arrl.radiocraft.api.benetworks.BENetworkObject createNetworkObject() {
+        return new com.arrl.radiocraft.common.be_networks.network_objects.DeskChargerNetworkObject(level, worldPosition);
+    }
+
+    @Override
+    public void setRemoved() {
+        super.setRemoved();
+        undock();
+    }
+
+    @Override
+    public void onChunkUnloaded() {
+        super.onChunkUnloaded();
+        undock();
+    }
+
+    private void undock() {
+        if (docked != null) {
+            docked.close();
+            docked = null;
+        }
+    }
+
+    public boolean hasRadio() {
+        return !inventory.getStackInSlot(0).isEmpty();
+    }
+
+    /** Puts the handheld in {@code player}'s {@code hand} in the cradle; one already there goes into that hand. */
+    public void dock(Player player, net.minecraft.world.InteractionHand hand) {
+        ItemStack held = player.getItemInHand(hand);
+        if (!(held.getItem() instanceof VHFHandheldItem))
+            return;
+        ItemStack old = inventory.getStackInSlot(0).copy();
+        inventory.setStackInSlot(0, held.copyWithCount(1));
+        held.shrink(1);
+        if (held.isEmpty())
+            player.setItemInHand(hand, old);
+        else if (!old.isEmpty() && !player.getInventory().add(old))
+            player.drop(old, false);
+        click();
+    }
+
+    /** Hands the radio in the cradle to {@code player}: into their main hand if it is empty, else their inventory (or at their feet). */
+    public void takeRadio(Player player) {
+        ItemStack radio = inventory.getStackInSlot(0).copy();
+        if (radio.isEmpty())
+            return;
+        inventory.setStackInSlot(0, ItemStack.EMPTY);
+        if (player.getMainHandItem().isEmpty())
+            player.setItemInHand(net.minecraft.world.InteractionHand.MAIN_HAND, radio);
+        else if (!player.getInventory().add(radio))
+            player.drop(radio, false);
+        click();
+    }
+
+    private void click() {
+        if (level != null)
+            level.playSound(null, worldPosition, net.minecraft.sounds.SoundEvents.ITEM_FRAME_ADD_ITEM, net.minecraft.sounds.SoundSource.BLOCKS, 0.8F, 1.2F);
+        sync();
+    }
+
+    /** True while the handheld in it hears a signal (its screen lights). Synced to clients. */
+    public boolean isReceiving() {
+        return receiving;
+    }
+
+    /** Sends the charger, and the handheld in it, to clients watching. */
+    private void sync() {
+        setChanged();
+        if (level != null && !level.isClientSide) {
+            BlockState state = getBlockState();
+            level.sendBlockUpdated(worldPosition, state, state, 3);
+        }
+    }
+
+    /**
+     * The handheld in the cradle runs as a radio: its battery drains as in the hand, it goes off when flat, and its
+     * receiver and APRS module work through {@link DockedHandheld}.
+     */
+    private void tickHandheld(ServerLevel level) {
+        ItemStack radio = inventory.getStackInSlot(0);
+        if (!(radio.getItem() instanceof VHFHandheldItem)) {
+            undock();
+            setReceiving(false);
+            return;
+        }
+        IVHFHandheldCapability cap = radio.getCapability(RadiocraftCapabilities.VHF_HANDHELDS);
+        net.neoforged.neoforge.energy.IEnergyStorage energy = radio.getCapability(net.neoforged.neoforge.capabilities.Capabilities.EnergyStorage.ITEM);
+        if (cap != null && cap.isPowered() && energy != null) {
+            if (cap.isPTTDown())
+                cap.setPTTDown(false); // Nobody is holding it to talk.
+            int drain = VHFHandheldItem.calculateEnergyConsumption(cap, level.getGameTime());
+            if (energy.getEnergyStored() <= 0) {
+                cap.setPowered(false); // Flat: it switches itself off.
+                sync();
+            } else if (drain > 0) {
+                energy.extractEnergy(drain, false);
+            }
+        }
+        if (docked == null)
+            docked = new DockedHandheld(level, worldPosition, this::sync);
+        docked.tick(radio);
+        setReceiving(docked.isReceiving());
+    }
+
+    private void setReceiving(boolean now) {
+        if (now != receiving) {
+            receiving = now;
+            sync();
+        }
+    }
+
     public static void tick(Level level, BlockPos pos, BlockState state, DeskChargerBlockEntity be) {
         if (level.isClientSide()) return;
+        be.tickHandheld((ServerLevel) level);
 
         // Get block energy capability
         // Use the BE's own energyStorage for reliable transfers
@@ -69,7 +207,7 @@ public class DeskChargerBlockEntity extends BlockEntity implements GeoBlockEntit
         if (radioEnergy == null) return;
 
         // Transfer rate per tick
-        int desiredTransfer = 8; // FE per tick: a flat small battery's worth in about 6 minutes, like a charge controller
+        int desiredTransfer = 1; // FE per tick: a flat small battery's worth in about 50 minutes (maintainer, 2026-11-04: an eighth of the old 8)
 
         // Don't extract before knowing how much radio can accept. Simulate receive first.
         int available = blockEnergy.getEnergyStored();
@@ -146,6 +284,7 @@ public class DeskChargerBlockEntity extends BlockEntity implements GeoBlockEntit
         energyStorage.saveAdditional(energyTag);
         tag.put("energy", energyTag);
         tag.putBoolean("infinite", this.infinite);
+        tag.putBoolean("receiving", this.receiving);
     }
 
     @Override
@@ -172,6 +311,7 @@ public class DeskChargerBlockEntity extends BlockEntity implements GeoBlockEntit
         if (tag.contains("infinite")) {
             this.infinite = tag.getBoolean("infinite");
         }
+        this.receiving = tag.getBoolean("receiving");
     }
 
     public boolean isInfinite() {

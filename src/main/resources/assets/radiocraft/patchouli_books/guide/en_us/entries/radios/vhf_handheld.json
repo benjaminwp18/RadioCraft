@@ -6,11 +6,25 @@
   "pages": [
     {
       "type": "patchouli:text",
-      "text": "The handheld is the easiest radio: no antenna, no wiring.$(li)$(thing)Hold right click$() to talk (push to talk).$(li)$(thing)Sneak and right click$() to open it: frequency, volume, the $(thing)TX tone$() and $(thing)RX tone$() pages (the TXT and RXT keys) and the $(thing)offset$() page (ENTER), used with $(l:radiocraft:repeaters/repeater)repeaters$(/l)."
+      "text": "The handheld is the easiest radio: no antenna, no wiring.$(li)$(thing)Hold right click$() to talk (push to talk).$(li)$(thing)Sneak and right click$() to open it: frequency, volume, the $(thing)TX tone$() and $(thing)RX tone$() pages (the TXT and RXT keys) and the $(thing)offset$() page (ENTER), used with $(l:radiocraft:repeaters/repeater)repeaters$(/l), and the $(l:radiocraft:repeaters/dtmf)DTMF$(/l) page (#: type the keys, ENTER sends them)."
     },
     {
       "type": "patchouli:text",
-      "text": "It runs on a $(item)small battery$(): a few days of normal use. Hold the handheld in your off hand and sneak-use a battery in your main hand to swap them, or charge it in a $(item)desk charger$().$(br2)Range is a few hundred blocks by line of sight; a $(l:radiocraft:repeaters/repeater)repeater$(/l) on a hill extends it.",
+      "text": "Ten $(thing)memory channels$(), one per number key, each holding a frequency, its tones and offset.$(li)$(thing)Hold MW$() to store what the radio is on: pick the slot with the arrows or a number, ENTER saves, then name it (7 letters).$(li)$(thing)Tap MW$() to switch between the dial (VFO) and memory mode, where the arrows and number keys pick channels.$(li)$(thing)*$() opens the setup menu: show channels by name, frequency or number, or rename one.",
+      "title": "Memory"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "Craft an $(item)APRS module$() with the handheld to install it. APRS then opens its menu: the $(thing)stations$() heard (open one for its coordinates and a compass), $(thing)messages$() (they scroll across the screen), canned messages to $(thing)send$(), a $(thing)beacon$() (on or off, its icon, comment, interval and the SSID after your callsign) and a $(thing)mute$() for packet noise. The module works on 144.390 MHz whatever the dial says.",
+      "title": "APRS"
+    },
+    {
+      "type": "patchouli:crafting",
+      "recipe": "radiocraft:aprs_module"
+    },
+    {
+      "type": "patchouli:text",
+      "text": "It runs on a $(item)small battery$(): a few days of normal use. Hold the handheld in your off hand and sneak-use a battery in your main hand to swap them, or charge it in a $(item)desk charger$() (run power wire to it). In the charger it stays on: you hear it from there, its screen lights when a signal comes in, and its APRS module keeps beaconing, but it uses its battery as in the hand.$(br2)Range is a few hundred blocks by line of sight; a $(l:radiocraft:repeaters/repeater)repeater$(/l) on a hill extends it.",
       "title": "Battery"
     },
     {
