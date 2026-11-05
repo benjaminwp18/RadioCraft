@@ -76,6 +76,7 @@ public record SAudioUploadPacket(@NotNull String soundName, int totalSamples, in
                 return;
             }
 
+            // TODO: what if a player starts uploading a 2nd recording while the 1st is still uploading?
             if (index == 0) {
                 if (totalSamples <= 0 || MAX_SAMPLES < totalSamples) return;
                 IN_PROGRESS.put(playerUUID, new Assembly(totalSamples, soundName));

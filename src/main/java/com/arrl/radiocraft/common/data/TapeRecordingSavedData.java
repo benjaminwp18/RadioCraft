@@ -106,6 +106,10 @@ public class TapeRecordingSavedData extends SavedData {
         return Optional.ofNullable(tapesByHash.get(audioHash));
     }
 
+    public @NotNull List<TapeRecordingEntry> getByUploaderUUID(@NotNull UUID playerUUID) {
+        return tapesByTapeUUID.values().stream().filter(entry -> entry.uploaderUUID == playerUUID).toList();
+    }
+
     public void putTape(@NotNull TapeRecordingEntry tapeEntry) throws IllegalArgumentException {
         TapeRecordingSavedData.tapesByTapeUUID.put(tapeEntry.tapeUUID, tapeEntry);
         TapeRecordingSavedData.tapesByHash.put(tapeEntry.audioHash, tapeEntry);

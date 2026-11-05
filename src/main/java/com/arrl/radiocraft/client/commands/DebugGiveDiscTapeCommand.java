@@ -1,5 +1,6 @@
 package com.arrl.radiocraft.client.commands;
 
+import com.arrl.radiocraft.common.data.TapeRecordingSavedData;
 import com.arrl.radiocraft.common.network.serverbound.SAudioUploadPacket;
 import com.arrl.radiocraft.common.radio.tape.OggDecoder;
 import com.mojang.brigadier.Command;
@@ -70,7 +71,30 @@ public class DebugGiveDiscTapeCommand {
 				.requires(source -> source.hasPermission(2))
 				.then(Commands.literal("tapes")
 						.then(Commands.literal("give")
-								.then(builder)));
+								.then(builder))
+						.then(Commands.literal("upload_all_discs").executes(DebugGiveDiscTapeCommand::uploadAllDiscs)));
+	}
+
+	private static int uploadAllDiscs(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+		CommandSourceStack source = ctx.getSource();
+		List<String> failedLocations = new ArrayList<>();
+		for (String discLocation : songs.keySet()) {
+			try {
+				makeTape(ctx, discLocation);
+			} catch (CommandSyntaxException ignored) {
+				failedLocations.add(discLocation);
+			}
+		}
+
+		final int numSuccesses = songs.size() - failedLocations.size();
+		List<String> lines = new ArrayList<>();
+		for (String discLocation : failedLocations) {
+			lines.add("Failed to start upload of " + songs.get(discLocation).description());
+		}
+		lines.add("Total: " + numSuccesses + "/" + songs.size() + " disc uploads started successfully");
+
+		source.sendSuccess(() -> Component.literal(String.join("\n", lines)), false);
+		return Command.SINGLE_SUCCESS;
 	}
 
 	private static int makeTape(CommandContext<CommandSourceStack> ctx, String discLocation) throws CommandSyntaxException {
