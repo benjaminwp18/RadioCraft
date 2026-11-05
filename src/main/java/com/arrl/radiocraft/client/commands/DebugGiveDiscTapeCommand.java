@@ -92,6 +92,7 @@ public class DebugGiveDiscTapeCommand {
 			lines.add("Failed to start upload of " + songs.get(discLocation).description());
 		}
 		lines.add("Total: " + numSuccesses + "/" + songs.size() + " disc uploads started successfully");
+		lines.add("For developers: once the files are done uploading, you can check the hashes with /rcdebug tapes list @p");
 
 		source.sendSuccess(() -> Component.literal(String.join("\n", lines)), false);
 		return Command.SINGLE_SUCCESS;

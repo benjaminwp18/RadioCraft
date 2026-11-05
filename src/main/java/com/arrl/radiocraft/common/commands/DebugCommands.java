@@ -41,6 +41,7 @@ import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
+import net.minecraft.commands.arguments.EntityArgument;
 import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -48,6 +49,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
 import java.io.IOException;
@@ -56,6 +58,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 /**
  * Developer diagnostics and controls, so the mod can be inspected and driven without a GUI. Output is plain text so it
@@ -99,7 +102,8 @@ public class DebugCommands {
 			.then(Commands.literal("flipbundles").then(Commands.argument("from", BlockPosArgument.blockPos()).then(Commands.argument("to", BlockPosArgument.blockPos())
 					.executes(DebugCommands::flipBundles))))
 			.then(Commands.literal("tapes").executes(DebugCommands::tapes)
-					.then(Commands.literal("list").executes(DebugCommands::listTapes))
+					.then(Commands.literal("list").executes(ctx -> listTapes(ctx, false))
+							.then(Commands.argument("uploader", EntityArgument.player()).executes(ctx -> listTapes(ctx, true))))
 					.then(Commands.literal("give")
 							.then(Commands.literal("found_track").then(Commands.argument("track", StringArgumentType.greedyString()).executes(DebugCommands::giveTape))))
 					.then(Commands.literal("reload").executes(DebugCommands::reloadTapes))
@@ -618,21 +622,51 @@ public class DebugCommands {
 		return send(ctx, List.of("gave a tape of " + track));
 	}
 
-	private static int listTapes(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+	private static int listTapes(CommandContext<CommandSourceStack> ctx, boolean onlyTapeByUploader) throws CommandSyntaxException {
 		var server = ctx.getSource().getServer();
+
+		ServerPlayer uploader = onlyTapeByUploader ? EntityArgument.getPlayer(ctx, "uploader") : null;
+
 		List<String> out = new ArrayList<>();
 		out.add("");
 
-		List<String> tracks = new ArrayList<>(TapeLibrary.tracks(server, ""));
-		tracks.addAll(TapeLibrary.tracks(server, TapeLibrary.NUMBERS));
-		out.add("=== Preloaded/found (.ogg) tapes" + (tracks.isEmpty() ? " (none)" : "") + " ===");
-		out.addAll(tracks.stream().map(s -> "  " + s).toList());
+		// # Send found OGG tracks to chat
+		if (!onlyTapeByUploader) {
+			List<String> tracks = new ArrayList<>(TapeLibrary.tracks(server, ""));
+			tracks.addAll(TapeLibrary.tracks(server, TapeLibrary.NUMBERS));
+			out.add("=== Preloaded/found (.ogg) tapes" + (tracks.isEmpty() ? " (none)" : "") + " ===");
+			out.addAll(tracks.stream().map(s -> "  " + s).toList());
+		}
 
+		// # Deal with uploaded record disc tapes
 		TapeRecordingSavedData savedData = TapeRecordingSavedData.get(ctx.getSource().getServer().overworld());
-		List<String> uploads = savedData.viewAllTapes().stream().map(TapeRecordingSavedData.TapeRecordingEntry::toString).toList();
-		out.add("\n=== User recordings/uploads (.ulaw) tapes" + (uploads.isEmpty() ? " (none)" : "") + " ===");
-		out.addAll(uploads.stream().map(s -> "  " + s).toList());
+		List<TapeRecordingSavedData.TapeRecordingEntry> entries = savedData.viewAllTapes().stream()
+				.filter(entry -> !onlyTapeByUploader || entry.uploaderUUID() == uploader.getUUID())
+				.toList();
+
+		// ## Send full record disc descriptions to chat
+		List<String> entryStrings = entries.stream().map(TapeRecordingSavedData.TapeRecordingEntry::toString).toList();
+		out.add("\n=== User recordings/uploads (.ulaw) tapes" + (entryStrings.isEmpty() ? " (none)" : "") + " ===");
+		out.addAll(entryStrings.stream().map(s -> "  " + s).toList());
 		out.add("");
+		out.add("See game info log for copy-able recording hashes");
+
+		// ## Send record disc hashes to game log (to let devs update allowed hashes)
+		List<String> loggerOut = new ArrayList<>();
+		loggerOut.add(" === User recording/upload hashes === ");
+		if (onlyTapeByUploader) {
+			loggerOut.add("\t=> Filtered for uploading player '" + uploader.getName().getString() + "'");
+		}
+		if (entries.isEmpty()) {
+			loggerOut.add("\tNo recordings found");
+		}
+		for (var entry : entries) {
+			loggerOut.add("\t" + (onlyTapeByUploader ? "" : "by" + entry.readableUploader() + ":\t")
+					+ "entry(" + entry.hashCode() + ", \"" + entry.tapeName() + "\"),"
+			);
+		}
+		loggerOut.add(" === End of user recording/upload hashes === ");
+		Radiocraft.LOGGER.info(String.join("\n", loggerOut));
 
 		return send(ctx, out);
 	}

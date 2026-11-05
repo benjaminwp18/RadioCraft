@@ -22,10 +22,14 @@ public class TapeRecordingSavedData extends SavedData {
             @NotNull UUID uploaderUUID, @Nullable String uploaderName,
             int audioHash, int audioLengthSeconds
     ) {
+        public @NotNull String readableUploader() {
+            if (uploaderName == null) return uploaderUUID.toString().substring(0, 8) + "...";
+            else return uploaderName;
+        }
+
         @Override
         public @NotNull String toString() {
-            String uploader = (uploaderName != null ? uploaderName : "") + " (" + uploaderUUID.toString().substring(0, 8) + "...)";
-            return "Upload by " + uploader + ": " + tapeName + " (" + tapeUUID.toString().substring(0, 8) + "...), " + audioLengthSeconds + "s";
+            return "Upload by " + readableUploader() + ": " + tapeName + " (" + tapeUUID.toString().substring(0, 8) + "...), " + audioLengthSeconds + "s";
         }
     }
 
