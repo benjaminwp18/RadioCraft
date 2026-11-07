@@ -647,22 +647,25 @@ public class DebugCommands {
 		// ## Send full record disc descriptions to chat
 		List<String> entryStrings = entries.stream().map(TapeRecordingSavedData.TapeRecordingEntry::toString).toList();
 		out.add("\n=== User recordings/uploads (.ulaw) tapes" + (entryStrings.isEmpty() ? " (none)" : "") + " ===");
+		if (onlyTapeByUploader) {
+			out.add("    (Filtered for uploading player '" + uploader.getName().getString() + "')");
+		}
 		out.addAll(entryStrings.stream().map(s -> "  " + s).toList());
 		out.add("");
 		out.add("See game info log for copy-able recording hashes");
 
 		// ## Send record disc hashes to game log (to let devs update allowed hashes)
 		List<String> loggerOut = new ArrayList<>();
-		loggerOut.add(" === User recording/upload hashes === ");
+		loggerOut.add("\n === User recording/upload hashes === ");
 		if (onlyTapeByUploader) {
-			loggerOut.add("\t=> Filtered for uploading player '" + uploader.getName().getString() + "'");
+			loggerOut.add("     (Filtered for uploading player '" + uploader.getName().getString() + "')");
 		}
 		if (entries.isEmpty()) {
 			loggerOut.add("\tNo recordings found");
 		}
-		for (var entry : entries) {
-			loggerOut.add("\t" + (onlyTapeByUploader ? "" : "by" + entry.readableUploader() + ":\t")
-					+ "entry(" + entry.hashCode() + ", \"" + entry.tapeName() + "\"),"
+		for (TapeRecordingSavedData.TapeRecordingEntry entry : entries) {
+			loggerOut.add("\t" + (onlyTapeByUploader ? "" : "by " + entry.readableUploader() + ":\t")
+					+ "entry(" + entry.audioHash() + ", \"" + entry.tapeName() + "\"),"
 			);
 		}
 		loggerOut.add(" === End of user recording/upload hashes === ");

@@ -594,6 +594,7 @@
   "radiocraft.configuration.sporadic_e_max_range": "Sporadic E Max Range",
   "radiocraft.configuration.sporadic_e_min_range": "Sporadic E Min Range",
   "radiocraft.configuration.sporadic_e_strength": "Sporadic E Strength",
+  "radiocraft.configuration.tape_upload_filtering": "Tape Upload Filtering",
   "radiocraft.configuration.tapes_in_world": "Tapes in World",
   "radiocraft.configuration.terrain_atlas_max_chunks": "Terrain Atlas Max Chunks",
   "radiocraft.configuration.terrain_cliff_loss_db": "Terrain Cliff Loss dB",

@@ -52,6 +52,11 @@ public class RadiocraftServerConfig {
 	public static final ModConfigSpec.ConfigValue<Boolean> WIND_ANTENNA_DAMAGE_ENABLED;
 	public static final ModConfigSpec.ConfigValue<Integer> ALTERNATOR_FE_AT_256_RPM;
 	public static final ModConfigSpec.ConfigValue<Boolean> TAPES_IN_WORLD;
+	public static final ModConfigSpec.EnumValue<TapeUploadFiltering> TAPE_UPLOAD_FILTERING;
+
+	/** When the music disc tape upload allowlist is applied:
+	 * to all uploads, only to uploads that aren't thru the rcdebug admin command, or never (free for all).  */
+	public enum TapeUploadFiltering { FILTER_ALL, FILTER_NON_OP, FILTER_NONE }
 
 	/** How the moderation log keeps voice: as it arrived, or re-encoded narrowband (not available yet). */
 	public enum ModerationQuality { ORIGINAL, NARROWBAND }
@@ -302,11 +307,17 @@ public class RadiocraftServerConfig {
 		BUILDER.pop();
 
 		BUILDER.push("Tapes");
+		BUILDER.comment(" Tapes may be associated with preloaded/found-in-the-wild OGG files, player voice recordings, or player music disc uploads.");
 		TAPES_IN_WORLD = BUILDER.comment(" Where the server's preloaded/found tape recordings (.ogg files; not user uploads, which are always per-world) are:",
 				" false for config/radiocraft/tapes, shared by every world;",
 				" true for <world>/radiocraft/tapes, kept with the world.",
 				" A 'numbers' folder inside holds what numbers stations read out")
 				.define("tapes_in_world", false);
+		TAPE_UPLOAD_FILTERING = BUILDER.comment(" How music disc tape uploads should be filtered. New tape uploads will be limited to the hardcoded vanilla allowlist for:",
+				" - FILTER_ALL: all uploads",
+				" - FILTER_NON_OP: all uploads performed by non-admins (perms level 0-1)",
+				" - FILTER_NONE: no uploads (any modded/resource pack modified music discs can be uploaded)"
+		).defineEnum("tape_upload_filtering", TapeUploadFiltering.FILTER_NON_OP);
 		BUILDER.pop();
 
 		BUILDER.push("No Antenna");

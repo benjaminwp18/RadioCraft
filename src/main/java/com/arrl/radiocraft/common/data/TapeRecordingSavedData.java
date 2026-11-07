@@ -16,7 +16,6 @@ public class TapeRecordingSavedData extends SavedData {
     private static final String DATA_NAME = Radiocraft.MOD_ID + "_" + DATA_SPECIFIER;
 
     // TODO: consider implementing an entity or item capability & moving this to api/capabilities
-    // TODO: consider storing audio length
     public record TapeRecordingEntry(
             @NotNull UUID tapeUUID, @NotNull String tapeName,
             @NotNull UUID uploaderUUID, @Nullable String uploaderName,
